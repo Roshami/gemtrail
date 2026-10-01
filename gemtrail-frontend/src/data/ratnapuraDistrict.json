@@ -1,0 +1,24 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "district_name": "Ratnapura",
+        "district_code": "RA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [80.000000, 6.000000],
+            [80.010000, 6.010000],
+            [80.020000, 6.020000],
+            [80.030000, 6.010000],
+            [80.000000, 6.000000]
+          ]
+        ]
+      }
+    }
+  ]
+}
