@@ -2,11 +2,10 @@ const db = require("../config/db");
 
 
 // =====================================================
-// GET ALL ACTIVE PLACES
+// GET ALL PLACES
 // =====================================================
 
 const getAllPlaces = async () => {
-
     const [rows] = await db.query(`
         SELECT
             tp.id,
@@ -22,15 +21,15 @@ const getAllPlaces = async () => {
             tp.visit_duration,
             tp.rating,
             tp.district,
+            tp.is_active,
+            tp.created_at,
+            tp.updated_at,
             c.name AS category
-
         FROM tourist_places tp
-
         INNER JOIN categories c
             ON tp.category_id = c.id
-
         WHERE tp.is_active = TRUE
-
+          AND tp.district = 'Ratnapura'
         ORDER BY tp.name ASC
     `);
 
@@ -43,7 +42,6 @@ const getAllPlaces = async () => {
 // =====================================================
 
 const getPlaceById = async (id) => {
-
     const [rows] = await db.query(`
         SELECT
             tp.id,
@@ -59,18 +57,18 @@ const getPlaceById = async (id) => {
             tp.visit_duration,
             tp.rating,
             tp.district,
+            tp.is_active,
+            tp.created_at,
+            tp.updated_at,
             c.name AS category
-
         FROM tourist_places tp
-
         INNER JOIN categories c
             ON tp.category_id = c.id
-
         WHERE tp.id = ?
-        AND tp.is_active = TRUE
+          AND tp.is_active = TRUE
     `, [id]);
 
-    return rows[0];
+    return rows[0] || null;
 };
 
 
@@ -79,6 +77,7 @@ const getPlaceById = async (id) => {
 // =====================================================
 
 const searchPlaces = async (search) => {
+    const searchText = `%${search}%`;
 
     const [rows] = await db.query(`
         SELECT
@@ -95,28 +94,23 @@ const searchPlaces = async (search) => {
             tp.visit_duration,
             tp.rating,
             tp.district,
+            tp.is_active,
             c.name AS category
-
         FROM tourist_places tp
-
         INNER JOIN categories c
             ON tp.category_id = c.id
-
         WHERE tp.is_active = TRUE
-
-        AND (
-            tp.name LIKE ?
-            OR tp.location LIKE ?
-            OR tp.description LIKE ?
-            OR c.name LIKE ?
-        )
-
+          AND tp.district = 'Ratnapura'
+          AND (
+                tp.name LIKE ?
+                OR tp.description LIKE ?
+                OR tp.location LIKE ?
+              )
         ORDER BY tp.name ASC
     `, [
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`,
-        `%${search}%`
+        searchText,
+        searchText,
+        searchText
     ]);
 
     return rows;
@@ -124,11 +118,10 @@ const searchPlaces = async (search) => {
 
 
 // =====================================================
-// FILTER BY CATEGORY
+// GET PLACES BY CATEGORY
 // =====================================================
 
 const getPlacesByCategory = async (category) => {
-
     const [rows] = await db.query(`
         SELECT
             tp.id,
@@ -144,17 +137,15 @@ const getPlacesByCategory = async (category) => {
             tp.visit_duration,
             tp.rating,
             tp.district,
+            tp.is_active,
             c.name AS category
-
         FROM tourist_places tp
-
         INNER JOIN categories c
             ON tp.category_id = c.id
-
         WHERE tp.is_active = TRUE
-        AND c.name = ?
-
-        ORDER BY tp.rating DESC
+          AND tp.district = 'Ratnapura'
+          AND c.name = ?
+        ORDER BY tp.name ASC
     `, [category]);
 
     return rows;
@@ -166,7 +157,6 @@ const getPlacesByCategory = async (category) => {
 // =====================================================
 
 const getTopRatedPlaces = async () => {
-
     const [rows] = await db.query(`
         SELECT
             tp.id,
@@ -182,17 +172,14 @@ const getTopRatedPlaces = async () => {
             tp.visit_duration,
             tp.rating,
             tp.district,
+            tp.is_active,
             c.name AS category
-
         FROM tourist_places tp
-
         INNER JOIN categories c
             ON tp.category_id = c.id
-
         WHERE tp.is_active = TRUE
-
-        ORDER BY tp.rating DESC
-
+          AND tp.district = 'Ratnapura'
+        ORDER BY tp.rating DESC, tp.name ASC
         LIMIT 10
     `);
 
@@ -201,13 +188,26 @@ const getTopRatedPlaces = async () => {
 
 
 // =====================================================
-// GET PLACES WITHIN 25 KM
+// GET NEARBY PLACES
+//
+// latitude  = selected/current location
+// longitude = selected/current location
+// radius    = KM
+//
+// Also supports:
+// search
+// category
 // =====================================================
 
-const getNearbyPlaces = async (latitude, longitude) => {
+const getNearbyPlaces = async (
+    latitude,
+    longitude,
+    radius = 25,
+    search = "",
+    category = "All"
+) => {
 
-    const [rows] = await db.query(`
-
+    let query = `
         SELECT
             tp.id,
             tp.name,
@@ -222,6 +222,8 @@ const getNearbyPlaces = async (latitude, longitude) => {
             tp.visit_duration,
             tp.rating,
             tp.district,
+            tp.is_active,
+
             c.name AS category,
 
             (
@@ -230,6 +232,7 @@ const getNearbyPlaces = async (latitude, longitude) => {
                         1,
                         GREATEST(
                             -1,
+
                             COS(RADIANS(?))
                             *
                             COS(RADIANS(tp.latitude))
@@ -253,17 +256,79 @@ const getNearbyPlaces = async (latitude, longitude) => {
             ON tp.category_id = c.id
 
         WHERE tp.is_active = TRUE
-        AND tp.district = 'Ratnapura'
 
-        HAVING distance_km <= 25
+          AND tp.district = 'Ratnapura'
+    `;
 
-        ORDER BY distance_km ASC
 
-    `, [
+    // ---------------------------------------------
+    // Search filter
+    // ---------------------------------------------
+
+    const params = [
         latitude,
         longitude,
         latitude
-    ]);
+    ];
+
+
+    if (search && search.trim() !== "") {
+
+        query += `
+            AND (
+                tp.name LIKE ?
+                OR tp.description LIKE ?
+                OR tp.location LIKE ?
+            )
+        `;
+
+        const searchText =
+            `%${search.trim()}%`;
+
+        params.push(
+            searchText,
+            searchText,
+            searchText
+        );
+    }
+
+
+    // ---------------------------------------------
+    // Category filter
+    // ---------------------------------------------
+
+    if (
+        category &&
+        category !== "All"
+    ) {
+
+        query += `
+            AND c.name = ?
+        `;
+
+        params.push(category);
+    }
+
+
+    // ---------------------------------------------
+    // Radius filter
+    // ---------------------------------------------
+
+    query += `
+        HAVING distance_km <= ?
+
+        ORDER BY distance_km ASC
+    `;
+
+    params.push(radius);
+
+
+    const [rows] =
+        await db.query(
+            query,
+            params
+        );
+
 
     return rows;
 };
@@ -293,9 +358,7 @@ const createPlace = async (place) => {
 
 
     const [result] = await db.query(`
-
-        INSERT INTO tourist_places
-        (
+        INSERT INTO tourist_places (
             category_id,
             name,
             description,
@@ -310,9 +373,7 @@ const createPlace = async (place) => {
             rating,
             district
         )
-
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-
     `, [
         category_id,
         name,
@@ -338,7 +399,10 @@ const createPlace = async (place) => {
 // UPDATE PLACE
 // =====================================================
 
-const updatePlace = async (id, place) => {
+const updatePlace = async (
+    id,
+    place
+) => {
 
     const {
         category_id,
@@ -358,7 +422,6 @@ const updatePlace = async (id, place) => {
 
 
     const [result] = await db.query(`
-
         UPDATE tourist_places
 
         SET
@@ -377,7 +440,6 @@ const updatePlace = async (id, place) => {
             district = ?
 
         WHERE id = ?
-
     `, [
         category_id,
         name,
@@ -402,18 +464,16 @@ const updatePlace = async (id, place) => {
 
 // =====================================================
 // DELETE PLACE
+//
+// Soft delete
 // =====================================================
 
 const deletePlace = async (id) => {
 
     const [result] = await db.query(`
-
         UPDATE tourist_places
-
         SET is_active = FALSE
-
         WHERE id = ?
-
     `, [id]);
 
 
@@ -421,14 +481,28 @@ const deletePlace = async (id) => {
 };
 
 
+// =====================================================
+// EXPORT
+// =====================================================
+
 module.exports = {
+
     getAllPlaces,
+
     getPlaceById,
+
     searchPlaces,
+
     getPlacesByCategory,
+
     getTopRatedPlaces,
+
     getNearbyPlaces,
+
     createPlace,
+
     updatePlace,
+
     deletePlace
-};011111111111111111111111111111111111111112
+
+};

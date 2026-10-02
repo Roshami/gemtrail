@@ -3,7 +3,20 @@ const placesModel = require("../models/placesModel");
 
 // =====================================================
 // GET PLACES
-// GET /api/places
+//
+// Supports:
+//
+// /api/places
+//
+// /api/places?search=waterfall
+//
+// /api/places?category=Nature
+//
+// /api/places?latitude=6.68&longitude=80.40&radius=25
+//
+// /api/places?latitude=6.68&longitude=80.40&radius=10&category=Nature
+//
+// /api/places?latitude=6.68&longitude=80.40&radius=25&search=waterfall
 // =====================================================
 
 const getPlaces = async (req, res) => {
@@ -14,74 +27,193 @@ const getPlaces = async (req, res) => {
             search,
             category,
             latitude,
-            longitude
+            longitude,
+            radius
         } = req.query;
 
 
         let places;
 
 
-        // Nearby search has highest priority
-        if (latitude && longitude) {
+        // =================================================
+        // Location-based search
+        // =================================================
 
-            places = await placesModel.getNearbyPlaces(
-                parseFloat(latitude),
-                parseFloat(longitude)
-            );
+        if (
+            latitude !== undefined &&
+            longitude !== undefined
+        ) {
 
-        }
+            const userLatitude =
+                Number(latitude);
 
-        // Search
-        else if (search) {
+            const userLongitude =
+                Number(longitude);
 
-            places = await placesModel.searchPlaces(search);
+            const searchRadius =
+                radius !== undefined
+                    ? Number(radius)
+                    : 25;
 
-        }
 
-        // Category filter
-        else if (category && category !== "All") {
+            // ---------------------------------------------
+            // Validate latitude
+            // ---------------------------------------------
+
+            if (
+                Number.isNaN(userLatitude) ||
+                userLatitude < -90 ||
+                userLatitude > 90
+            ) {
+
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Invalid latitude"
+                });
+            }
+
+
+            // ---------------------------------------------
+            // Validate longitude
+            // ---------------------------------------------
+
+            if (
+                Number.isNaN(userLongitude) ||
+                userLongitude < -180 ||
+                userLongitude > 180
+            ) {
+
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Invalid longitude"
+                });
+            }
+
+
+            // ---------------------------------------------
+            // Validate radius
+            // ---------------------------------------------
+
+            if (
+                Number.isNaN(searchRadius) ||
+                searchRadius <= 0 ||
+                searchRadius > 25
+            ) {
+
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Radius must be between 1 and 25 km"
+                });
+            }
+
 
             places =
-                await placesModel.getPlacesByCategory(category);
+                await placesModel.getNearbyPlaces(
+                    userLatitude,
+                    userLongitude,
+                    searchRadius,
+                    search,
+                    category
+                );
 
         }
 
+
+        // =================================================
+        // Search only
+        // =================================================
+
+        else if (
+            search &&
+            search.trim() !== ""
+        ) {
+
+            places =
+                await placesModel.searchPlaces(
+                    search.trim()
+                );
+
+        }
+
+
+        // =================================================
+        // Category only
+        // =================================================
+
+        else if (
+            category &&
+            category !== "All"
+        ) {
+
+            places =
+                await placesModel.getPlacesByCategory(
+                    category
+                );
+
+        }
+
+
+        // =================================================
         // All places
+        // =================================================
+
         else {
 
             places =
                 await placesModel.getAllPlaces();
+
         }
 
 
-        res.status(200).json({
+        // =================================================
+        // Response
+        // =================================================
+
+        return res.status(200).json({
+
             success: true,
+
             count: places.length,
+
             data: places
+
         });
+
 
     } catch (error) {
 
-        console.error("Get places error:", error);
+        console.error(
+            "Get places error:",
+            error
+        );
 
-        res.status(500).json({
+
+        return res.status(500).json({
+
             success: false,
-            message: "Failed to get places"
+
+            message:
+                "Failed to get tourist places"
+
         });
+
     }
 };
 
 
 // =====================================================
 // GET SINGLE PLACE
-// GET /api/places/:id
 // =====================================================
 
-const getPlace = async (req, res) => {
+const getPlaceById = async (req, res) => {
 
     try {
 
         const { id } = req.params;
+
 
         const place =
             await placesModel.getPlaceById(id);
@@ -90,35 +222,55 @@ const getPlace = async (req, res) => {
         if (!place) {
 
             return res.status(404).json({
+
                 success: false,
-                message: "Place not found"
+
+                message:
+                    "Tourist place not found"
+
             });
+
         }
 
 
-        res.status(200).json({
+        return res.status(200).json({
+
             success: true,
+
             data: place
+
         });
+
 
     } catch (error) {
 
-        console.error("Get place error:", error);
+        console.error(
+            "Get place by ID error:",
+            error
+        );
 
-        res.status(500).json({
+
+        return res.status(500).json({
+
             success: false,
-            message: "Failed to get place"
+
+            message:
+                "Failed to get tourist place"
+
         });
+
     }
 };
 
 
 // =====================================================
-// TOP RATED
-// GET /api/places/top-rated
+// GET TOP RATED PLACES
 // =====================================================
 
-const getTopRatedPlaces = async (req, res) => {
+const getTopRatedPlaces = async (
+    req,
+    res
+) => {
 
     try {
 
@@ -126,30 +278,46 @@ const getTopRatedPlaces = async (req, res) => {
             await placesModel.getTopRatedPlaces();
 
 
-        res.status(200).json({
+        return res.status(200).json({
+
             success: true,
+
             count: places.length,
+
             data: places
+
         });
+
 
     } catch (error) {
 
-        console.error("Top rated error:", error);
+        console.error(
+            "Top rated places error:",
+            error
+        );
 
-        res.status(500).json({
+
+        return res.status(500).json({
+
             success: false,
-            message: "Failed to get top rated places"
+
+            message:
+                "Failed to get top-rated places"
+
         });
+
     }
 };
 
 
 // =====================================================
 // CREATE PLACE
-// POST /api/places
 // =====================================================
 
-const createPlace = async (req, res) => {
+const createPlace = async (
+    req,
+    res
+) => {
 
     try {
 
@@ -170,88 +338,332 @@ const createPlace = async (req, res) => {
         } = req.body;
 
 
-        if (!category_id || !name) {
+        // ---------------------------------------------
+        // Required fields
+        // ---------------------------------------------
+
+        if (
+            !category_id ||
+            !name ||
+            !location ||
+            latitude === undefined ||
+            longitude === undefined
+        ) {
 
             return res.status(400).json({
+
                 success: false,
-                message: "Category and place name are required"
+
+                message:
+                    "category_id, name, location, latitude and longitude are required"
+
             });
+
         }
 
 
+        // ---------------------------------------------
+        // Validate coordinates
+        // ---------------------------------------------
+
+        const lat =
+            Number(latitude);
+
+        const lng =
+            Number(longitude);
+
+
+        if (
+            Number.isNaN(lat) ||
+            lat < -90 ||
+            lat > 90
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Invalid latitude"
+
+            });
+
+        }
+
+
+        if (
+            Number.isNaN(lng) ||
+            lng < -180 ||
+            lng > 180
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Invalid longitude"
+
+            });
+
+        }
+
+
+        // ---------------------------------------------
+        // Create
+        // ---------------------------------------------
+
         const id =
-            await placesModel.createPlace(req.body);
+            await placesModel.createPlace({
+
+                category_id,
+
+                name,
+
+                description,
+
+                location,
+
+                latitude: lat,
+
+                longitude: lng,
+
+                opening_hours,
+
+                entrance_fee,
+
+                transport_info,
+
+                travel_time,
+
+                visit_duration,
+
+                rating,
+
+                district:
+                    district || "Ratnapura"
+
+            });
 
 
-        res.status(201).json({
+        return res.status(201).json({
+
             success: true,
-            message: "Place created successfully",
-            id
+
+            message:
+                "Tourist place created successfully",
+
+            data: {
+                id
+            }
+
         });
+
 
     } catch (error) {
 
-        console.error("Create place error:", error);
+        console.error(
+            "Create place error:",
+            error
+        );
 
-        res.status(500).json({
+
+        return res.status(500).json({
+
             success: false,
-            message: "Failed to create place"
+
+            message:
+                "Failed to create tourist place"
+
         });
+
     }
 };
 
 
 // =====================================================
 // UPDATE PLACE
-// PUT /api/places/:id
 // =====================================================
 
-const updatePlace = async (req, res) => {
+const updatePlace = async (
+    req,
+    res
+) => {
 
     try {
 
         const { id } = req.params;
 
 
+        const {
+            category_id,
+            name,
+            description,
+            location,
+            latitude,
+            longitude,
+            opening_hours,
+            entrance_fee,
+            transport_info,
+            travel_time,
+            visit_duration,
+            rating,
+            district
+        } = req.body;
+
+
+        if (
+            !category_id ||
+            !name ||
+            !location ||
+            latitude === undefined ||
+            longitude === undefined
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "category_id, name, location, latitude and longitude are required"
+
+            });
+
+        }
+
+
+        const lat =
+            Number(latitude);
+
+        const lng =
+            Number(longitude);
+
+
+        if (
+            Number.isNaN(lat) ||
+            lat < -90 ||
+            lat > 90
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Invalid latitude"
+
+            });
+
+        }
+
+
+        if (
+            Number.isNaN(lng) ||
+            lng < -180 ||
+            lng > 180
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Invalid longitude"
+
+            });
+
+        }
+
+
         const affectedRows =
             await placesModel.updatePlace(
                 id,
-                req.body
+                {
+
+                    category_id,
+
+                    name,
+
+                    description,
+
+                    location,
+
+                    latitude: lat,
+
+                    longitude: lng,
+
+                    opening_hours,
+
+                    entrance_fee,
+
+                    transport_info,
+
+                    travel_time,
+
+                    visit_duration,
+
+                    rating,
+
+                    district:
+                        district || "Ratnapura"
+
+                }
             );
 
 
         if (affectedRows === 0) {
 
             return res.status(404).json({
+
                 success: false,
-                message: "Place not found"
+
+                message:
+                    "Tourist place not found"
+
             });
+
         }
 
 
-        res.status(200).json({
+        return res.status(200).json({
+
             success: true,
-            message: "Place updated successfully"
+
+            message:
+                "Tourist place updated successfully"
+
         });
+
 
     } catch (error) {
 
-        console.error("Update place error:", error);
+        console.error(
+            "Update place error:",
+            error
+        );
 
-        res.status(500).json({
+
+        return res.status(500).json({
+
             success: false,
-            message: "Failed to update place"
+
+            message:
+                "Failed to update tourist place"
+
         });
+
     }
 };
 
 
 // =====================================================
 // DELETE PLACE
-// DELETE /api/places/:id
 // =====================================================
 
-const deletePlace = async (req, res) => {
+const deletePlace = async (
+    req,
+    res
+) => {
 
     try {
 
@@ -265,34 +677,64 @@ const deletePlace = async (req, res) => {
         if (affectedRows === 0) {
 
             return res.status(404).json({
+
                 success: false,
-                message: "Place not found"
+
+                message:
+                    "Tourist place not found"
+
             });
+
         }
 
 
-        res.status(200).json({
+        return res.status(200).json({
+
             success: true,
-            message: "Place deleted successfully"
+
+            message:
+                "Tourist place deleted successfully"
+
         });
+
 
     } catch (error) {
 
-        console.error("Delete place error:", error);
+        console.error(
+            "Delete place error:",
+            error
+        );
 
-        res.status(500).json({
+
+        return res.status(500).json({
+
             success: false,
-            message: "Failed to delete place"
+
+            message:
+                "Failed to delete tourist place"
+
         });
+
     }
 };
 
 
+// =====================================================
+// EXPORT
+// =====================================================
+
 module.exports = {
+
     getPlaces,
-    getPlace,
+
+    getPlaceById,
+
     getTopRatedPlaces,
+
     createPlace,
+
     updatePlace,
+
     deletePlace
+
 };

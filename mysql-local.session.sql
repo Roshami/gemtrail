@@ -1,0 +1,1 @@
+UPDATE EmployeeDepartmentView SET Bonus = 0.25;

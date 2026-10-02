@@ -2,27 +2,72 @@ const express = require("express");
 
 const router = express.Router();
 
-const {
-    getPlaces,
-    getPlace,
-    getTopRatedPlaces,
-    createPlace,
-    updatePlace,
-    deletePlace
-} = require("../controllers/placesController");
+const placesController =
+    require("../controllers/placesController");
 
 
-router.get("/", getPlaces);
+// =====================================================
+// GET
+// =====================================================
 
-router.get("/top-rated", getTopRatedPlaces);
+// All places
+// Search
+// Category
+// Nearby
+router.get(
+    "/",
+    placesController.getPlaces
+);
 
-router.post("/", createPlace);
 
-router.get("/:id", getPlace);
+// =====================================================
+// TOP RATED
+// =====================================================
 
-router.put("/:id", updatePlace);
+router.get(
+    "/top-rated",
+    placesController.getTopRatedPlaces
+);
 
-router.delete("/:id", deletePlace);
+
+// =====================================================
+// GET ONE
+// =====================================================
+
+router.get(
+    "/:id",
+    placesController.getPlaceById
+);
+
+
+// =====================================================
+// CREATE
+// =====================================================
+
+router.post(
+    "/",
+    placesController.createPlace
+);
+
+
+// =====================================================
+// UPDATE
+// =====================================================
+
+router.put(
+    "/:id",
+    placesController.updatePlace
+);
+
+
+// =====================================================
+// DELETE
+// =====================================================
+
+router.delete(
+    "/:id",
+    placesController.deletePlace
+);
 
 
 module.exports = router;

@@ -7,6 +7,7 @@ import {
   Circle,
   GeoJSON,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import { Link } from "react-router-dom";
@@ -18,9 +19,9 @@ import ratnapuraDistrict from "../data/ratnapuraDistrict.json";
 const API_URL = "http://localhost:5000/api/places";
 
 
-// --------------------------------------------------
-// Fix default Leaflet marker icons
-// --------------------------------------------------
+// =====================================================
+// Leaflet default marker fix
+// =====================================================
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -36,16 +37,16 @@ L.Icon.Default.mergeOptions({
 });
 
 
-// --------------------------------------------------
-// User location custom icon
-// --------------------------------------------------
+// =====================================================
+// User location icon
+// =====================================================
 
 const userLocationIcon = L.divIcon({
   className: "user-location-marker",
 
   html: `
     <div class="user-marker">
-      <span>🧍</span>
+      <span>📍</span>
     </div>
   `,
 
@@ -55,24 +56,44 @@ const userLocationIcon = L.divIcon({
 });
 
 
-// --------------------------------------------------
-// Ratnapura District center
-// --------------------------------------------------
+// =====================================================
+// Selected location icon
+// =====================================================
+
+const selectedLocationIcon = L.divIcon({
+  className: "selected-location-marker",
+
+  html: `
+    <div class="selected-marker">
+      <span>📍</span>
+    </div>
+  `,
+
+  iconSize: [45, 45],
+  iconAnchor: [22, 40],
+  popupAnchor: [0, -40],
+});
+
+
+// =====================================================
+// Default Ratnapura map center
+//
+// This is NOT user's location.
+// It is only the initial map view.
+// =====================================================
 
 const RATNAPURA_CENTER = [6.6828, 80.3992];
 
 
-// --------------------------------------------------
-// Create map mask
-//
-// Outside Ratnapura District = grey
-// Inside Ratnapura District = visible
-// --------------------------------------------------
+// =====================================================
+// Create outside-district mask
+// =====================================================
 
-const createDistrictMask = () => {
+function createDistrictMask() {
   try {
     const worldPolygon = {
       type: "Feature",
+
       properties: {},
 
       geometry: {
@@ -90,12 +111,15 @@ const createDistrictMask = () => {
       },
     };
 
-    const districtFeatures =
-      ratnapuraDistrict.type === "FeatureCollection"
-        ? ratnapuraDistrict.features
-        : [ratnapuraDistrict];
+    let districtFeatures = [];
 
-    const featureCollection = {
+    if (ratnapuraDistrict.type === "FeatureCollection") {
+      districtFeatures = ratnapuraDistrict.features;
+    } else {
+      districtFeatures = [ratnapuraDistrict];
+    }
+
+    const collection = {
       type: "FeatureCollection",
 
       features: [
@@ -104,97 +128,251 @@ const createDistrictMask = () => {
       ],
     };
 
-    return mask(featureCollection);
+    return mask(collection);
 
   } catch (error) {
-    console.error("Failed to create district mask:", error);
+    console.error(
+      "District mask creation failed:",
+      error
+    );
+
     return null;
   }
-};
+}
 
 
-// Create once
 const districtMask = createDistrictMask();
 
 
-// --------------------------------------------------
-// Map Controller
-// --------------------------------------------------
+// =====================================================
+// Map controller
+// =====================================================
 
-function MapController({ location }) {
+function MapController({ selectedLocation }) {
   const map = useMap();
 
   useEffect(() => {
-    const resizeMap = () => {
-      map.invalidateSize();
-    };
 
-    resizeMap();
+    map.invalidateSize();
 
     const timer = setTimeout(() => {
+
       map.invalidateSize();
 
-      if (location) {
+      if (selectedLocation) {
+
         map.flyTo(
-          [location.latitude, location.longitude],
+          [
+            selectedLocation.latitude,
+            selectedLocation.longitude,
+          ],
+
           12,
+
           {
             duration: 1.2,
           }
         );
-      } else {
-        map.setView(RATNAPURA_CENTER, 11);
-      }
-    }, 500);
 
-    window.addEventListener("resize", resizeMap);
+      } else {
+
+        map.setView(
+          RATNAPURA_CENTER,
+          11
+        );
+
+      }
+
+    }, 300);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("resize", resizeMap);
     };
-  }, [location, map]);
+
+  }, [selectedLocation, map]);
 
   return null;
 }
 
 
-// --------------------------------------------------
+// =====================================================
+// Map click handler
+// =====================================================
+
+function MapClickHandler({
+  pickMode,
+  onLocationPick,
+}) {
+
+  useMapEvents({
+
+    click(event) {
+
+      if (!pickMode) {
+        return;
+      }
+
+      const latitude =
+        event.latlng.lat;
+
+      const longitude =
+        event.latlng.lng;
+
+      onLocationPick({
+        latitude,
+        longitude,
+      });
+
+    },
+
+  });
+
+  return null;
+}
+
+
+// =====================================================
 // Places Page
-// --------------------------------------------------
+// =====================================================
 
 function Places() {
 
-  // ------------------------------------------------
-  // State
-  // ------------------------------------------------
+  // ---------------------------------------------------
+  // Places
+  // ---------------------------------------------------
 
   const [places, setPlaces] = useState([]);
 
+
+  // ---------------------------------------------------
+  // Search
+  // ---------------------------------------------------
+
   const [search, setSearch] = useState("");
 
-  const [category, setCategory] = useState("All");
 
-  const [radius, setRadius] = useState(25);
+  // ---------------------------------------------------
+  // Category
+  // ---------------------------------------------------
 
-  const [userLocation, setUserLocation] = useState(null);
-
-  const [loading, setLoading] = useState(true);
-
-  const [locationLoading, setLocationLoading] = useState(true);
-
-  const [error, setError] = useState("");
-
-  const [locationError, setLocationError] = useState("");
-
-  const [categories, setCategories] = useState([]);
+  const [category, setCategory] =
+    useState("All");
 
 
-  // ------------------------------------------------
-  // Get user's current location
-  // ------------------------------------------------
+  // ---------------------------------------------------
+  // Radius
+  // ---------------------------------------------------
+
+  const [radius, setRadius] =
+    useState(25);
+
+
+  // ---------------------------------------------------
+  // Selected location
+  //
+  // This is the location used for searching.
+  // ---------------------------------------------------
+
+  const [selectedLocation, setSelectedLocation] =
+    useState(null);
+
+
+  // ---------------------------------------------------
+  // Actual browser GPS location
+  // ---------------------------------------------------
+
+  const [currentLocation, setCurrentLocation] =
+    useState(null);
+
+
+  // ---------------------------------------------------
+  // Pick mode
+  // ---------------------------------------------------
+
+  const [pickMode, setPickMode] =
+    useState(false);
+
+
+  // ---------------------------------------------------
+  // Loading
+  // ---------------------------------------------------
+
+  const [loading, setLoading] =
+    useState(false);
+
+
+  const [locationLoading, setLocationLoading] =
+    useState(false);
+
+
+  // ---------------------------------------------------
+  // Errors
+  // ---------------------------------------------------
+
+  const [error, setError] =
+    useState("");
+
+  const [locationError, setLocationError] =
+    useState("");
+
+
+  // ---------------------------------------------------
+  // Categories
+  // ---------------------------------------------------
+
+  const [categories, setCategories] =
+    useState([]);
+
+
+  // ===================================================
+  // Get categories
+  // ===================================================
 
   useEffect(() => {
+
+    const fetchCategories = async () => {
+
+      try {
+
+        const response = await fetch(
+          "http://localhost:5000/api/categories"
+        );
+
+        const result =
+          await response.json();
+
+        if (result.success) {
+
+          setCategories(
+            result.data || []
+          );
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Category error:",
+          error
+        );
+
+      }
+
+    };
+
+    fetchCategories();
+
+  }, []);
+
+
+  // ===================================================
+  // Get user's current location
+  // ===================================================
+
+  const getCurrentLocation = () => {
+
+    setLocationError("");
+    setLocationLoading(true);
 
     if (!navigator.geolocation) {
 
@@ -212,79 +390,106 @@ function Places() {
 
       (position) => {
 
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
+        const location = {
 
-        setUserLocation({
-          latitude,
-          longitude,
-        });
+          latitude:
+            position.coords.latitude,
+
+          longitude:
+            position.coords.longitude,
+
+        };
+
+
+        // Save actual GPS location
+        setCurrentLocation(location);
+
+
+        // Use GPS location for searching
+        setSelectedLocation(location);
+
+
+        // Exit pick mode
+        setPickMode(false);
+
 
         setLocationLoading(false);
+
       },
+
 
       (error) => {
 
-        console.error("Location error:", error);
-
-        setLocationError(
-          "Unable to get your current location. Please allow location access."
-        );
-
-        setLocationLoading(false);
-      },
-
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
-    );
-
-  }, []);
-
-
-  // ------------------------------------------------
-  // Fetch categories
-  // ------------------------------------------------
-
-  useEffect(() => {
-
-    const fetchCategories = async () => {
-
-      try {
-
-        const response = await fetch(
-          "http://localhost:5000/api/categories"
-        );
-
-        const result = await response.json();
-
-        if (result.success) {
-
-          setCategories(result.data || []);
-
-        }
-
-      } catch (error) {
-
         console.error(
-          "Category loading error:",
+          "Geolocation error:",
           error
         );
 
+
+        let message =
+          "Unable to get your current location.";
+
+
+        if (error.code === 1) {
+
+          message =
+            "Location permission was denied. Please allow location access in your browser.";
+
+        }
+
+        if (error.code === 2) {
+
+          message =
+            "Your location is currently unavailable.";
+
+        }
+
+        if (error.code === 3) {
+
+          message =
+            "Location request timed out. Please try again.";
+
+        }
+
+
+        setLocationError(message);
+
+        setLocationLoading(false);
+
+      },
+
+
+      {
+        enableHighAccuracy: true,
+
+        timeout: 15000,
+
+        maximumAge: 0,
       }
-
-    };
-
-    fetchCategories();
-
-  }, []);
+    );
+  };
 
 
-  // ------------------------------------------------
+  // ===================================================
+  // Pick location from map
+  // ===================================================
+
+  const handleLocationPick = (
+    location
+  ) => {
+
+    setSelectedLocation(location);
+
+    setPickMode(false);
+
+    setLocationError("");
+
+  };
+
+
+  // ===================================================
   // Fetch places
-  // ------------------------------------------------
+  // ===================================================
 
   useEffect(() => {
 
@@ -293,14 +498,41 @@ function Places() {
       try {
 
         setLoading(true);
-
         setError("");
 
 
-        const params = new URLSearchParams();
+        const params =
+          new URLSearchParams();
 
 
+        // ---------------------------------------------
+        // Selected location
+        // ---------------------------------------------
+
+        if (selectedLocation) {
+
+          params.append(
+            "latitude",
+            selectedLocation.latitude
+          );
+
+          params.append(
+            "longitude",
+            selectedLocation.longitude
+          );
+
+          params.append(
+            "radius",
+            radius
+          );
+
+        }
+
+
+        // ---------------------------------------------
         // Search
+        // ---------------------------------------------
+
         if (search.trim()) {
 
           params.append(
@@ -311,7 +543,10 @@ function Places() {
         }
 
 
+        // ---------------------------------------------
         // Category
+        // ---------------------------------------------
+
         if (
           category &&
           category !== "All"
@@ -325,51 +560,28 @@ function Places() {
         }
 
 
-        // User location
-        if (userLocation) {
-
-          params.append(
-            "latitude",
-            userLocation.latitude
-          );
-
-          params.append(
-            "longitude",
-            userLocation.longitude
-          );
-
-          // Maximum radius sent to backend
-          params.append(
-            "radius",
-            25
-          );
-
-        }
+        const url =
+          `${API_URL}?${params.toString()}`;
 
 
-        const url = `${API_URL}?${params.toString()}`;
-
-
-        const response = await fetch(url);
+        const response =
+          await fetch(url);
 
 
         if (!response.ok) {
 
           throw new Error(
-            "Failed to fetch places"
+            "Failed to load places"
           );
 
         }
 
 
-        const result = await response.json();
+        const result =
+          await response.json();
 
 
-        if (result.success) {
-
-          setPlaces(result.data || []);
-
-        } else {
+        if (!result.success) {
 
           throw new Error(
             result.message ||
@@ -378,10 +590,15 @@ function Places() {
 
         }
 
+
+        setPlaces(
+          result.data || []
+        );
+
       } catch (error) {
 
         console.error(
-          "Places loading error:",
+          "Places API error:",
           error
         );
 
@@ -401,134 +618,153 @@ function Places() {
     fetchPlaces();
 
   }, [
-    search,
-    category,
-    userLocation,
-  ]);
-
-
-  // ------------------------------------------------
-  // Filter places by selected radius
-  // ------------------------------------------------
-
-  const displayedPlaces = useMemo(() => {
-
-    let filtered = [...places];
-
-
-    // ----------------------------------------------
-    // Radius filtering
-    // ----------------------------------------------
-
-    if (userLocation) {
-
-      filtered = filtered.filter((place) => {
-
-        if (
-          place.distance_km === undefined ||
-          place.distance_km === null
-        ) {
-
-          return true;
-
-        }
-
-        return (
-          Number(place.distance_km) <=
-          Number(radius)
-        );
-
-      });
-
-    }
-
-
-    // ----------------------------------------------
-    // Search filtering
-    // ----------------------------------------------
-
-    if (search.trim()) {
-
-      const searchText =
-        search.toLowerCase().trim();
-
-
-      filtered = filtered.filter((place) => {
-
-        return (
-
-          place.name
-            ?.toLowerCase()
-            .includes(searchText)
-
-          ||
-
-          place.description
-            ?.toLowerCase()
-            .includes(searchText)
-
-          ||
-
-          place.location
-            ?.toLowerCase()
-            .includes(searchText)
-
-        );
-
-      });
-
-    }
-
-
-    // ----------------------------------------------
-    // Category filtering
-    // ----------------------------------------------
-
-    if (
-      category &&
-      category !== "All"
-    ) {
-
-      filtered = filtered.filter(
-        (place) =>
-          place.category === category
-      );
-
-    }
-
-
-    // ----------------------------------------------
-    // Sort by distance
-    // ----------------------------------------------
-
-    if (userLocation) {
-
-      filtered.sort((a, b) => {
-
-        return (
-          Number(a.distance_km || 9999) -
-          Number(b.distance_km || 9999)
-        );
-
-      });
-
-    }
-
-
-    return filtered;
-
-  }, [
-    places,
+    selectedLocation,
     radius,
     search,
     category,
-    userLocation,
   ]);
 
 
-  // ------------------------------------------------
+  // ===================================================
+  // Frontend filtering
+  // ===================================================
+
+  const displayedPlaces =
+    useMemo(() => {
+
+      let result =
+        [...places];
+
+
+      // ---------------------------------------------
+      // Radius
+      // ---------------------------------------------
+
+      if (selectedLocation) {
+
+        result =
+          result.filter((place) => {
+
+            if (
+              place.distance_km ===
+                undefined ||
+              place.distance_km ===
+                null
+            ) {
+
+              return true;
+
+            }
+
+            return (
+              Number(
+                place.distance_km
+              ) <= radius
+            );
+
+          });
+
+      }
+
+
+      // ---------------------------------------------
+      // Search
+      // ---------------------------------------------
+
+      if (search.trim()) {
+
+        const text =
+          search
+            .trim()
+            .toLowerCase();
+
+
+        result =
+          result.filter((place) => {
+
+            return (
+
+              place.name
+                ?.toLowerCase()
+                .includes(text)
+
+              ||
+
+              place.description
+                ?.toLowerCase()
+                .includes(text)
+
+              ||
+
+              place.location
+                ?.toLowerCase()
+                .includes(text)
+
+            );
+
+          });
+
+      }
+
+
+      // ---------------------------------------------
+      // Category
+      // ---------------------------------------------
+
+      if (
+        category &&
+        category !== "All"
+      ) {
+
+        result =
+          result.filter(
+            (place) =>
+              place.category ===
+              category
+          );
+
+      }
+
+
+      // ---------------------------------------------
+      // Distance sorting
+      // ---------------------------------------------
+
+      if (selectedLocation) {
+
+        result.sort(
+          (a, b) =>
+            Number(
+              a.distance_km || 9999
+            ) -
+            Number(
+              b.distance_km || 9999
+            )
+        );
+
+      }
+
+
+      return result;
+
+    }, [
+
+      places,
+
+      selectedLocation,
+
+      radius,
+
+      search,
+
+      category,
+
+    ]);
+
+
+  // ===================================================
   // Clear filters
-  // ------------------------------------------------
+  // ===================================================
 
   const clearFilters = () => {
 
@@ -541,133 +777,298 @@ function Places() {
   };
 
 
-  // ------------------------------------------------
-  // Loading state
-  // ------------------------------------------------
+  // ===================================================
+  // Reset selected location
+  // ===================================================
 
-  if (
-    loading &&
-    places.length === 0
-  ) {
+  const resetLocation = () => {
 
-    return (
-      <div className="min-h-screen bg-gray-50">
+    setSelectedLocation(null);
 
-        <div className="max-w-7xl mx-auto px-4 py-20">
+    setPickMode(false);
 
-          <div className="flex flex-col items-center justify-center">
-
-            <div
-              className="
-                w-12
-                h-12
-                border-4
-                border-green-200
-                border-t-green-700
-                rounded-full
-                animate-spin
-              "
-            />
-
-            <p className="mt-4 text-gray-600">
-              Loading tourist places...
-            </p>
-
-          </div>
-
-        </div>
-
-      </div>
-    );
-
-  }
+  };
 
 
-  // ------------------------------------------------
-  // Main UI
-  // ------------------------------------------------
+  // ===================================================
+  // Render
+  // ===================================================
 
   return (
 
     <div className="min-h-screen bg-gray-50">
 
-      {/* ========================================= */}
-      {/* Header */}
-      {/* ========================================= */}
+
+      {/* ============================================ */}
+      {/* Page Header */}
+      {/* ============================================ */}
 
       <section className="bg-white border-b">
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div
+          className="
+            max-w-7xl
+            mx-auto
+            px-4
+            sm:px-6
+            lg:px-8
+            py-10
+          "
+        >
 
-          <div className="max-w-3xl">
+          <p className="text-green-700 font-semibold text-sm uppercase tracking-wide">
+            Explore Ratnapura
+          </p>
 
-            <p className="text-green-700 font-semibold text-sm uppercase tracking-wide">
-              Explore Ratnapura
-            </p>
+          <h1 className="mt-2 text-3xl md:text-4xl font-bold text-gray-900">
+            Tourist Places
+          </h1>
 
-            <h1 className="mt-2 text-3xl md:text-4xl font-bold text-gray-900">
-              Tourist Places
-            </h1>
-
-            <p className="mt-3 text-gray-600 leading-relaxed">
-              Discover tourist attractions around your
-              current location within Ratnapura District.
-            </p>
-
-          </div>
+          <p className="mt-3 text-gray-600 max-w-2xl">
+            Find tourist places around your current
+            location or choose any location on the map.
+          </p>
 
         </div>
 
       </section>
 
 
-      {/* ========================================= */}
-      {/* Location status */}
-      {/* ========================================= */}
+      {/* ============================================ */}
+      {/* Location controls */}
+      {/* ============================================ */}
 
-      {locationLoading && (
+      <section
+        className="
+          max-w-7xl
+          mx-auto
+          px-4
+          sm:px-6
+          lg:px-8
+          pt-6
+        "
+      >
 
-        <div className="bg-blue-50 border-b border-blue-100">
+        <div
+          className="
+            bg-white
+            rounded-2xl
+            shadow-sm
+            border
+            border-gray-100
+            p-5
+          "
+        >
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-col lg:flex-row gap-4">
 
-            <p className="text-sm text-blue-700">
-              📍 Getting your current location...
-            </p>
+
+            {/* Current Location */}
+
+            <button
+              onClick={getCurrentLocation}
+              disabled={locationLoading}
+
+              className="
+                flex-1
+                flex
+                items-center
+                justify-center
+                gap-2
+                px-5
+                py-3
+                bg-green-700
+                text-white
+                rounded-xl
+                font-semibold
+                hover:bg-green-800
+                disabled:opacity-60
+                disabled:cursor-not-allowed
+                transition
+              "
+            >
+
+              {locationLoading
+                ? "Getting Location..."
+                : "📍 Use My Current Location"}
+
+            </button>
+
+
+            {/* Pick on map */}
+
+            <button
+              onClick={() =>
+                setPickMode(
+                  !pickMode
+                )
+              }
+
+              className={`
+                flex-1
+                flex
+                items-center
+                justify-center
+                gap-2
+                px-5
+                py-3
+                rounded-xl
+                font-semibold
+                border
+                transition
+
+                ${
+                  pickMode
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-blue-700 border-blue-200 hover:bg-blue-50"
+                }
+              `}
+            >
+
+              🗺️{" "}
+              {pickMode
+                ? "Click Map to Select"
+                : "Pick Location on Map"}
+
+            </button>
+
+
+            {/* Reset */}
+
+            {selectedLocation && (
+
+              <button
+                onClick={resetLocation}
+
+                className="
+                  px-5
+                  py-3
+                  rounded-xl
+                  font-semibold
+                  text-gray-600
+                  bg-gray-100
+                  hover:bg-gray-200
+                "
+              >
+                Reset Location
+              </button>
+
+            )}
 
           </div>
 
+
+          {/* Pick mode message */}
+
+          {pickMode && (
+
+            <div className="mt-4 bg-blue-50 border border-blue-100 rounded-xl p-4">
+
+              <p className="text-sm text-blue-800 font-medium">
+                🗺️ Pick Location mode is active.
+                Click anywhere on the map to search
+                for tourist places around that location.
+              </p>
+
+            </div>
+
+          )}
+
+
+          {/* Location error */}
+
+          {locationError && (
+
+            <div className="mt-4 bg-yellow-50 border border-yellow-100 rounded-xl p-4">
+
+              <p className="text-sm text-yellow-800">
+                ⚠️ {locationError}
+              </p>
+
+            </div>
+
+          )}
+
+
+          {/* Selected location */}
+
+          {selectedLocation && (
+
+            <div className="mt-4 flex flex-wrap gap-2">
+
+              <span className="px-3 py-2 bg-green-50 text-green-700 rounded-full text-sm font-medium">
+
+                📍 Lat:{" "}
+                {selectedLocation.latitude.toFixed(5)}
+
+              </span>
+
+              <span className="px-3 py-2 bg-green-50 text-green-700 rounded-full text-sm font-medium">
+
+                Lng:{" "}
+                {selectedLocation.longitude.toFixed(5)}
+
+              </span>
+
+
+              {currentLocation &&
+                selectedLocation.latitude ===
+                  currentLocation.latitude &&
+                selectedLocation.longitude ===
+                  currentLocation.longitude && (
+
+                <span className="px-3 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+
+                  📡 Current GPS Location
+
+                </span>
+
+              )}
+
+            </div>
+
+          )}
+
         </div>
 
-      )}
+      </section>
 
 
-      {locationError && (
+      {/* ============================================ */}
+      {/* Search / filters */}
+      {/* ============================================ */}
 
-        <div className="bg-yellow-50 border-b border-yellow-100">
+      <section
+        className="
+          max-w-7xl
+          mx-auto
+          px-4
+          sm:px-6
+          lg:px-8
+          py-6
+        "
+      >
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div
+          className="
+            bg-white
+            rounded-2xl
+            shadow-sm
+            border
+            border-gray-100
+            p-5
+          "
+        >
 
-            <p className="text-sm text-yellow-800">
-              ⚠️ {locationError}
-            </p>
+          <div
+            className="
+              grid
+              grid-cols-1
+              md:grid-cols-4
+              gap-4
+            "
+          >
 
-          </div>
-
-        </div>
-
-      )}
-
-
-      {/* ========================================= */}
-      {/* Search and filters */}
-      {/* ========================================= */}
-
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
             {/* Search */}
 
@@ -677,43 +1078,25 @@ function Places() {
                 Search places
               </label>
 
-              <div className="relative">
-
-                <span
-                  className="
-                    absolute
-                    left-4
-                    top-1/2
-                    -translate-y-1/2
-                    text-gray-400
-                  "
-                >
-                  🔎
-                </span>
-
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) =>
-                    setSearch(e.target.value)
-                  }
-                  placeholder="Search tourist places..."
-                  className="
-                    w-full
-                    pl-11
-                    pr-4
-                    py-3
-                    border
-                    border-gray-200
-                    rounded-xl
-                    outline-none
-                    focus:ring-2
-                    focus:ring-green-500
-                    focus:border-green-500
-                  "
-                />
-
-              </div>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+                placeholder="Search tourist places..."
+                className="
+                  w-full
+                  px-4
+                  py-3
+                  border
+                  border-gray-200
+                  rounded-xl
+                  outline-none
+                  focus:ring-2
+                  focus:ring-green-500
+                "
+              />
 
             </div>
 
@@ -729,8 +1112,11 @@ function Places() {
               <select
                 value={category}
                 onChange={(e) =>
-                  setCategory(e.target.value)
+                  setCategory(
+                    e.target.value
+                  )
                 }
+
                 className="
                   w-full
                   px-4
@@ -738,10 +1124,10 @@ function Places() {
                   border
                   border-gray-200
                   rounded-xl
+                  bg-white
                   outline-none
                   focus:ring-2
                   focus:ring-green-500
-                  bg-white
                 "
               >
 
@@ -749,16 +1135,18 @@ function Places() {
                   All Categories
                 </option>
 
-                {categories.map((item) => (
+                {categories.map(
+                  (item) => (
 
-                  <option
-                    key={item.id}
-                    value={item.name}
-                  >
-                    {item.name}
-                  </option>
+                    <option
+                      key={item.id}
+                      value={item.name}
+                    >
+                      {item.name}
+                    </option>
 
-                ))}
+                  )
+                )}
 
               </select>
 
@@ -770,16 +1158,19 @@ function Places() {
             <div>
 
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Search radius
+                Radius
               </label>
 
               <select
                 value={radius}
                 onChange={(e) =>
                   setRadius(
-                    Number(e.target.value)
+                    Number(
+                      e.target.value
+                    )
                   )
                 }
+
                 className="
                   w-full
                   px-4
@@ -787,10 +1178,10 @@ function Places() {
                   border
                   border-gray-200
                   rounded-xl
+                  bg-white
                   outline-none
                   focus:ring-2
                   focus:ring-green-500
-                  bg-white
                 "
               >
 
@@ -821,22 +1212,22 @@ function Places() {
           </div>
 
 
-          {/* Filter information */}
+          {/* Filter summary */}
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
 
             <div className="flex flex-wrap gap-2">
 
-              <span className="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium">
+              <span className="px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium">
                 📍 Ratnapura District
               </span>
 
-              <span className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
-                📏 {radius} km radius
+              <span className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                📏 {radius} km
               </span>
 
-              <span className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
-                {displayedPlaces.length} places found
+              <span className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                {displayedPlaces.length} places
               </span>
 
             </div>
@@ -861,61 +1252,78 @@ function Places() {
       </section>
 
 
-      {/* ========================================= */}
+      {/* ============================================ */}
       {/* Map */}
-      {/* ========================================= */}
+      {/* ============================================ */}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section
+        className="
+          max-w-7xl
+          mx-auto
+          px-4
+          sm:px-6
+          lg:px-8
+        "
+      >
 
         <div
           className="
             bg-white
             rounded-2xl
-            shadow-sm
             overflow-hidden
+            shadow-sm
             border
             border-gray-100
           "
         >
 
-          <div className="h-125 md:h-150">
+          <div className="h-137.5">
 
             <MapContainer
-              center={
-                userLocation
-                  ? [
-                      userLocation.latitude,
-                      userLocation.longitude,
-                    ]
-                  : RATNAPURA_CENTER
-              }
+
+              center={RATNAPURA_CENTER}
+
               zoom={11}
+
+              minZoom={9}
+
+              maxZoom={18}
+
               scrollWheelZoom={true}
+
               className="w-full h-full"
             >
 
-              {/* ----------------------------------- */}
               {/* OpenStreetMap */}
-              {/* ----------------------------------- */}
 
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='&copy; OpenStreetMap contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
 
 
-              {/* ----------------------------------- */}
               {/* Map controller */}
-              {/* ----------------------------------- */}
 
               <MapController
-                location={userLocation}
+                selectedLocation={
+                  selectedLocation
+                }
               />
 
 
-              {/* ----------------------------------- */}
-              {/* Outside Ratnapura District mask */}
-              {/* ----------------------------------- */}
+              {/* Map click */}
+
+              <MapClickHandler
+                pickMode={pickMode}
+                onLocationPick={
+                  handleLocationPick
+                }
+              />
+
+
+              {/* ================================= */}
+              {/* Outside Ratnapura mask */}
+              {/* ================================= */}
 
               {districtMask && (
 
@@ -923,9 +1331,15 @@ function Places() {
                   data={districtMask}
 
                   style={{
-                    fillColor: "#111827",
-                    fillOpacity: 0.60,
-                    color: "transparent",
+                    fillColor:
+                      "#111827",
+
+                    fillOpacity:
+                      0.60,
+
+                    color:
+                      "transparent",
+
                     weight: 0,
                   }}
                 />
@@ -933,36 +1347,50 @@ function Places() {
               )}
 
 
-              {/* ----------------------------------- */}
-              {/* Ratnapura District boundary */}
-              {/* ----------------------------------- */}
+              {/* ================================= */}
+              {/* District boundary */}
+              {/* ================================= */}
 
               <GeoJSON
-                data={ratnapuraDistrict}
+                data={
+                  ratnapuraDistrict
+                }
 
                 style={{
-                  color: "#15803d",
+                  color:
+                    "#15803d",
+
                   weight: 3,
-                  fillColor: "#22c55e",
-                  fillOpacity: 0.05,
+
+                  fillColor:
+                    "#22c55e",
+
+                  fillOpacity:
+                    0.05,
                 }}
               />
 
 
-              {/* ----------------------------------- */}
-              {/* User location */}
-              {/* ----------------------------------- */}
+              {/* ================================= */}
+              {/* Selected location */}
+              {/* ================================= */}
 
-              {userLocation && (
+              {selectedLocation && (
 
                 <>
 
                   <Marker
                     position={[
-                      userLocation.latitude,
-                      userLocation.longitude,
+                      selectedLocation.latitude,
+                      selectedLocation.longitude,
                     ]}
-                    icon={userLocationIcon}
+
+                    icon={
+                      selectedLocation ===
+                      currentLocation
+                        ? userLocationIcon
+                        : selectedLocationIcon
+                    }
                   >
 
                     <Popup>
@@ -970,11 +1398,14 @@ function Places() {
                       <div className="text-center">
 
                         <strong>
-                          🧍 You are here
+                          {selectedLocation ===
+                          currentLocation
+                            ? "📍 Your Current Location"
+                            : "📍 Selected Location"}
                         </strong>
 
-                        <p className="text-sm text-gray-500 mt-1">
-                          Your current location
+                        <p className="text-xs text-gray-500 mt-1">
+                          Search center
                         </p>
 
                       </div>
@@ -984,19 +1415,28 @@ function Places() {
                   </Marker>
 
 
-                  {/* Radius circle */}
+                  {/* Radius */}
 
                   <Circle
                     center={[
-                      userLocation.latitude,
-                      userLocation.longitude,
+                      selectedLocation.latitude,
+                      selectedLocation.longitude,
                     ]}
-                    radius={radius * 1000}
+
+                    radius={
+                      radius * 1000
+                    }
 
                     pathOptions={{
-                      color: "#15803d",
-                      fillColor: "#22c55e",
-                      fillOpacity: 0.08,
+                      color:
+                        "#15803d",
+
+                      fillColor:
+                        "#22c55e",
+
+                      fillOpacity:
+                        0.08,
+
                       weight: 2,
                     }}
                   />
@@ -1006,149 +1446,136 @@ function Places() {
               )}
 
 
-              {/* ----------------------------------- */}
-              {/* Tourist place markers */}
-              {/* ----------------------------------- */}
+              {/* ================================= */}
+              {/* Tourist places */}
+              {/* ================================= */}
 
-              {displayedPlaces.map((place) => {
+              {displayedPlaces.map(
+                (place) => {
 
-                if (
-                  place.latitude === null ||
-                  place.longitude === null ||
-                  place.latitude === undefined ||
-                  place.longitude === undefined
-                ) {
-                  return null;
-                }
+                  if (
+                    place.latitude ===
+                      null ||
+                    place.longitude ===
+                      null ||
+                    place.latitude ===
+                      undefined ||
+                    place.longitude ===
+                      undefined
+                  ) {
 
+                    return null;
 
-                return (
-
-                  <Marker
-                    key={place.id}
-                    position={[
-                      Number(place.latitude),
-                      Number(place.longitude),
-                    ]}
-                  >
-
-                    <Popup>
-
-                      <div className="min-w-55">
-
-                        <h3 className="font-bold text-gray-900 text-base">
-                          {place.name}
-                        </h3>
+                  }
 
 
-                        <p className="text-xs text-green-700 font-semibold mt-1">
-                          {place.category}
-                        </p>
+                  return (
 
+                    <Marker
+                      key={place.id}
 
-                        <p className="text-sm text-gray-500 mt-2">
-                          📍 {place.location}
-                        </p>
+                      position={[
+                        Number(
+                          place.latitude
+                        ),
 
+                        Number(
+                          place.longitude
+                        ),
+                      ]}
+                    >
 
-                        {place.distance_km !==
-                          undefined &&
-                          place.distance_km !==
-                            null && (
+                      <Popup>
 
-                          <p className="text-sm text-blue-600 font-semibold mt-2">
-                            📏{" "}
-                            {Number(
-                              place.distance_km
-                            ).toFixed(1)}{" "}
-                            km away
+                        <div className="min-w-55">
+
+                          <h3 className="font-bold text-gray-900">
+                            {place.name}
+                          </h3>
+
+                          <p className="text-xs text-green-700 font-semibold mt-1">
+                            {place.category}
                           </p>
 
-                        )}
+                          <p className="text-sm text-gray-500 mt-2">
+                            📍 {place.location}
+                          </p>
 
 
-                        <Link
-                          to={`/places/${place.id}`}
-                          className="
-                            block
-                            mt-3
-                            text-center
-                            bg-green-700
-                            text-white
-                            px-3
-                            py-2
-                            rounded-lg
-                            text-sm
-                            font-semibold
-                            hover:bg-green-800
-                          "
-                        >
-                          View Details
-                        </Link>
+                          {place.distance_km !==
+                            undefined &&
+                            place.distance_km !==
+                              null && (
 
-                      </div>
+                            <p className="text-sm text-blue-600 font-semibold mt-2">
 
-                    </Popup>
+                              📏{" "}
+                              {Number(
+                                place.distance_km
+                              ).toFixed(2)}{" "}
+                              km
 
-                  </Marker>
+                            </p>
 
-                );
+                          )}
 
-              })}
+
+                          <Link
+                            to={`/places/${place.id}`}
+                            className="
+                              block
+                              mt-3
+                              text-center
+                              bg-green-700
+                              text-white
+                              px-3
+                              py-2
+                              rounded-lg
+                              text-sm
+                              font-semibold
+                              hover:bg-green-800
+                            "
+                          >
+                            View Details
+                          </Link>
+
+                        </div>
+
+                      </Popup>
+
+                    </Marker>
+
+                  );
+
+                }
+              )}
 
             </MapContainer>
 
           </div>
 
 
-          {/* Map legend */}
+          {/* Map information */}
 
-          <div className="p-4 border-t bg-white">
+          <div className="p-4 border-t">
 
-            <div className="flex flex-wrap items-center gap-5 text-sm text-gray-600">
+            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
 
-              <div className="flex items-center gap-2">
+              <span>
+                🟢 Ratnapura District
+              </span>
 
-                <span className="w-3 h-3 rounded-full bg-green-600"></span>
+              <span>
+                ⚫ Outside District
+              </span>
 
-                <span>
-                  Ratnapura District
-                </span>
+              <span>
+                📍 Selected Location
+              </span>
 
-              </div>
-
-
-              <div className="flex items-center gap-2">
-
-                <span className="w-3 h-3 rounded-full bg-gray-800"></span>
-
-                <span>
-                  Outside District
-                </span>
-
-              </div>
-
-
-              <div className="flex items-center gap-2">
-
-                <span className="w-3 h-3 rounded-full bg-blue-600"></span>
-
-                <span>
-                  Your Location
-                </span>
-
-              </div>
-
-
-              <div className="flex items-center gap-2">
-
-                <span className="w-3 h-3 rounded-full bg-green-400"></span>
-
-                <span>
-                  Tourist Places
-                </span>
-
-              </div>
+              <span>
+                🌿 Tourist Places
+              </span>
 
             </div>
 
@@ -1159,13 +1586,22 @@ function Places() {
       </section>
 
 
-      {/* ========================================= */}
+      {/* ============================================ */}
       {/* Places */}
-      {/* ========================================= */}
+      {/* ============================================ */}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <section
+        className="
+          max-w-7xl
+          mx-auto
+          px-4
+          sm:px-6
+          lg:px-8
+          py-10
+        "
+      >
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex justify-between items-center mb-6">
 
           <div>
 
@@ -1174,8 +1610,11 @@ function Places() {
             </h2>
 
             <p className="text-gray-500 mt-1">
-              Places within {radius} km of your
-              current location
+
+              {selectedLocation
+                ? `Places within ${radius} km of the selected location`
+                : "Select a location to find nearby places"}
+
             </p>
 
           </div>
@@ -1183,11 +1622,51 @@ function Places() {
         </div>
 
 
+        {/* Loading */}
+
+        {loading && (
+
+          <div className="mb-6">
+
+            <div className="flex items-center gap-2 text-green-700">
+
+              <div
+                className="
+                  w-5
+                  h-5
+                  border-2
+                  border-green-200
+                  border-t-green-700
+                  rounded-full
+                  animate-spin
+                "
+              />
+
+              <span className="text-sm">
+                Updating tourist places...
+              </span>
+
+            </div>
+
+          </div>
+
+        )}
+
+
         {/* Error */}
 
         {error && (
 
-          <div className="mb-6 bg-red-50 border border-red-100 rounded-xl p-4">
+          <div
+            className="
+              mb-6
+              bg-red-50
+              border
+              border-red-100
+              rounded-xl
+              p-4
+            "
+          >
 
             <p className="text-red-700 text-sm">
               ⚠️ {error}
@@ -1198,12 +1677,56 @@ function Places() {
         )}
 
 
+        {/* No location */}
+
+        {!selectedLocation && (
+
+          <div
+            className="
+              bg-white
+              rounded-2xl
+              border
+              border-gray-100
+              p-10
+              text-center
+            "
+          >
+
+            <div className="text-5xl">
+              📍
+            </div>
+
+            <h3 className="mt-4 text-xl font-bold text-gray-900">
+              Select a Location
+            </h3>
+
+            <p className="mt-2 text-gray-500 max-w-lg mx-auto">
+              Use your current location or pick a
+              location directly from the map to find
+              nearby tourist places.
+            </p>
+
+          </div>
+
+        )}
+
+
         {/* No places */}
 
-        {!loading &&
+        {selectedLocation &&
+          !loading &&
           displayedPlaces.length === 0 && (
 
-            <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
+            <div
+              className="
+                bg-white
+                rounded-2xl
+                border
+                border-gray-100
+                p-10
+                text-center
+              "
+            >
 
               <div className="text-5xl">
                 🗺️
@@ -1214,96 +1737,85 @@ function Places() {
               </h3>
 
               <p className="mt-2 text-gray-500">
-                No tourist places were found
-                using your current filters.
+                Try increasing the search radius or
+                selecting another location.
               </p>
-
-              <button
-                onClick={clearFilters}
-                className="
-                  mt-5
-                  px-5
-                  py-3
-                  bg-green-700
-                  text-white
-                  rounded-lg
-                  font-semibold
-                  hover:bg-green-800
-                "
-              >
-                Clear Filters
-              </button>
 
             </div>
 
           )}
 
 
-        {/* Place cards */}
+        {/* Cards */}
 
-        {displayedPlaces.length > 0 && (
+        {selectedLocation &&
+          displayedPlaces.length > 0 && (
 
-          <div
-            className="
-              grid
-              grid-cols-1
-              sm:grid-cols-2
-              lg:grid-cols-3
-              gap-6
-            "
-          >
+            <div
+              className="
+                grid
+                grid-cols-1
+                sm:grid-cols-2
+                lg:grid-cols-3
+                gap-6
+              "
+            >
 
-            {displayedPlaces.map((place) => (
-
-              <div
-                key={place.id}
-                className="relative"
-              >
-
-                {/* Distance badge */}
-
-                {place.distance_km !==
-                  undefined &&
-                  place.distance_km !== null && (
+              {displayedPlaces.map(
+                (place) => (
 
                   <div
-                    className="
-                      absolute
-                      top-3
-                      right-3
-                      z-10
-                      px-3
-                      py-1.5
-                      bg-white/95
-                      backdrop-blur-sm
-                      rounded-full
-                      text-xs
-                      font-bold
-                      text-blue-700
-                      shadow-sm
-                    "
+                    key={place.id}
+                    className="relative"
                   >
-                    📏{" "}
-                    {Number(
-                      place.distance_km
-                    ).toFixed(1)}{" "}
-                    km
+
+                    {/* Distance badge */}
+
+                    {place.distance_km !==
+                      undefined &&
+                      place.distance_km !==
+                        null && (
+
+                      <div
+                        className="
+                          absolute
+                          top-3
+                          right-3
+                          z-10
+                          px-3
+                          py-1.5
+                          bg-white/95
+                          rounded-full
+                          text-xs
+                          font-bold
+                          text-blue-700
+                          shadow-sm
+                        "
+                      >
+
+                        📏{" "}
+                        {Number(
+                          place.distance_km
+                        ).toFixed(1)}{" "}
+                        km
+
+                      </div>
+
+                    )}
+
+
+                    <PlaceCard
+                      place={place}
+                    />
+
                   </div>
 
-                )}
+                )
+              )}
 
+            </div>
 
-                <PlaceCard
-                  place={place}
-                />
-
-              </div>
-
-            ))}
-
-          </div>
-
-        )}
+          )}
 
       </section>
 
