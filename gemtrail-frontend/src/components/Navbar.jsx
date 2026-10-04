@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { useState } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -7,35 +7,41 @@ function Navbar() {
   const navLinkClass = ({ isActive }) =>
     `block py-2 md:py-0 transition ${
       isActive
-        ? "text-green-600 font-semibold"
-        : "text-gray-700 hover:text-green-600"
+        ? 'text-green-600 font-semibold'
+        : 'text-gray-700 hover:text-green-600'
     }`;
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
         <div className="flex items-center justify-between h-16">
-
           {/* Logo */}
-          <Link
-            to="/home"
-            className="flex items-center gap-2"
-          >
-            <div className="w-10 h-10 rounded-full bg-green-700 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">
+          <Link to="/home" className="flex items-center gap-2">
+            <div className="w-20 h-20 rounded-full flex items-center justify-center">
+              <img
+                src="/logo3.png"
+                alt="GemTrail Logo"
+                className="w-12 h-12 rounded-full object-cover"
+              />
+
+              {/*<span className="text-white font-bold text-xl">
                 G
-              </span>
+              </span>*/}
             </div>
 
-            <span className="text-xl sm:text-2xl font-bold text-green-700">
+            <img
+              src="/logo5.png"
+              alt="GemTrail Logo"
+              className="w-30  object-cover"
+            />
+
+            {/*<span className="text-xl sm:text-2xl font-bold text-green-700">
               GemTrail
-            </span>
+            </span>*/}
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-
             <NavLink to="/home" className={navLinkClass}>
               Home
             </NavLink>
@@ -51,7 +57,6 @@ function Navbar() {
             <NavLink to="/admin/login" className={navLinkClass}>
               Admin
             </NavLink>
-
           </div>
 
           {/* Mobile Menu Button */}
@@ -59,17 +64,13 @@ function Navbar() {
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden p-2 text-gray-700"
           >
-            <span className="text-2xl">
-              {isOpen ? "✕" : "☰"}
-            </span>
+            <span className="text-2xl">{isOpen ? '✕' : '☰'}</span>
           </button>
-
         </div>
 
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden border-t py-4 space-y-2">
-
             <NavLink
               to="/home"
               onClick={() => setIsOpen(false)}
@@ -101,10 +102,8 @@ function Navbar() {
             >
               Admin
             </NavLink>
-
           </div>
         )}
-
       </div>
     </nav>
   );
