@@ -1,0 +1,128 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  --font-serif: "Literata", Georgia, serif;
+  --font-sans: "Nunito Sans", system-ui, sans-serif;
+  --color-terra-green: #4a7c59;
+  --color-terra-green-dark: #3a6346;
+  --color-terra-green-light: #5d946e;
+  --color-terra-cream: #faf6f0;
+  --color-terra-surface: #f4efe6;
+  --color-terra-surface-card: #ffffff;
+  --color-terra-amber: #705c30;
+  --color-terra-amber-light: #8c733f;
+  --color-terra-border: #e3dcd1;
+}
+
+body {
+  background-color: #faf6f0;
+  color: #2e3230;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .font-serif {
+  font-family: var(--font-serif);
+}
+
+/* Custom Leaflet popup overrides */
+.leaflet-popup {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.22), 0 4px 12px -2px rgba(15, 23, 42, 0.1) !important;
+  border: 1px solid rgba(226, 232, 240, 0.85) !important;
+  padding: 6px !important;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px !important;
+  line-height: 1.4 !important;
+}
+
+.leaflet-popup-tip {
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15) !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  top: 10px !important;
+  right: 10px !important;
+  color: #64748b !important;
+  padding: 4px !important;
+  font-size: 16px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  background: #f1f5f9 !important;
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: #0f172a !important;
+  background: #e2e8f0 !important;
+}
+
+.custom-place-pin, .custom-center-pin, .custom-user-live-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-container {
+  font-family: var(--font-sans) !important;
+}
+
+@keyframes live-radar-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.9;
+  }
+  70% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.6);
+    opacity: 0;
+  }
+}
+
+.live-pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.45);
+  animation: live-radar-pulse 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  pointer-events: none;
+}
+
+.live-pulse-ring-delayed {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(14, 165, 233, 0.35);
+  animation: live-radar-pulse 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  animation-delay: 1.1s;
+  pointer-events: none;
+}
+
+

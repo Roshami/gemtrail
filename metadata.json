@@ -1,0 +1,6 @@
+{
+  "name": "GemTrail — Sabaragamuwa • Sri Lanka",
+  "description": "Explore Ratnapura District: uncover ancient gem mines, misty waterfalls, sacred shrines, and heritage trails across Sri Lanka's historic City of Gems.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
