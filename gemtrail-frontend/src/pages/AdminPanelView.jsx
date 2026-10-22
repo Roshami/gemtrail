@@ -401,7 +401,7 @@ export const AdminPanelView = ({
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto w-full px-3 sm:px-6 lg:px-10 py-6">
+    <div className="max-w-360 mx-auto w-full px-3 sm:px-6 lg:px-10 py-6">
       
       {/* 1. Header & Navigation Bar */}
       <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>

@@ -4,7 +4,7 @@ import { DISTRICT_INFO } from '../data/ratnapuraPlaces.js';
 
 export const AboutSabaragamuwaView = () => {
   return (
-    <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-8 animate-in fade-in">
+    <div className="max-w-360 mx-auto px-3 sm:px-6 lg:px-8 py-8 animate-in fade-in">
       
       {/* Title */}
       <div className="max-w-3xl mb-10">
@@ -22,25 +22,25 @@ export const AboutSabaragamuwaView = () => {
 
       {/* Vital Statistics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-        <div className="p-5 bg-[#fdfbf7] rounded-[12px] border border-[#ded5c5]">
+        <div className="p-5 bg-[#fdfbf7] rounded-xl border border-[#ded5c5]">
           <span className="text-[11px] uppercase tracking-wider font-bold text-[#705c30]">Total Area</span>
           <p className="font-serif text-2xl font-bold text-[#1f2622] mt-1">{DISTRICT_INFO.areaKm2}</p>
           <span className="text-xs text-[#666]">Forested basin</span>
         </div>
 
-        <div className="p-5 bg-[#fdfbf7] rounded-[12px] border border-[#ded5c5]">
+        <div className="p-5 bg-[#fdfbf7] rounded-xl border border-[#ded5c5]">
           <span className="text-[11px] uppercase tracking-wider font-bold text-[#705c30]">Elevation</span>
           <p className="font-serif text-2xl font-bold text-[#1f2622] mt-1">30m – 2,243m</p>
           <span className="text-xs text-[#666]">Peak: Sri Pada summit</span>
         </div>
 
-        <div className="p-5 bg-[#fdfbf7] rounded-[12px] border border-[#ded5c5]">
+        <div className="p-5 bg-[#fdfbf7] rounded-xl border border-[#ded5c5]">
           <span className="text-[11px] uppercase tracking-wider font-bold text-[#705c30]">Gem Varieties</span>
           <p className="font-serif text-2xl font-bold text-[#1f2622] mt-1">{DISTRICT_INFO.gemVarietiesCount}+ Types</p>
           <span className="text-xs text-[#666]">Out of 200 known minerals</span>
         </div>
 
-        <div className="p-5 bg-[#fdfbf7] rounded-[12px] border border-[#ded5c5]">
+        <div className="p-5 bg-[#fdfbf7] rounded-xl border border-[#ded5c5]">
           <span className="text-[11px] uppercase tracking-wider font-bold text-[#705c30]">Mining Heritage</span>
           <p className="font-serif text-2xl font-bold text-[#1f2622] mt-1">2,500+ Yrs</p>
           <span className="text-xs text-[#666]">Continuous artisan extraction</span>
@@ -49,7 +49,7 @@ export const AboutSabaragamuwaView = () => {
 
       {/* Deep Geological Narrative */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-        <div className="bg-[#f5efe3] rounded-[12px] p-6 sm:p-8 border border-[#ded5c5]">
+        <div className="bg-[#f5efe3] rounded-xl p-6 sm:p-8 border border-[#ded5c5]">
           <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#1f2622] mb-3 flex items-center gap-2">
             <Mountain className="w-5 h-5 text-[#4a7c59]" />
             <span>The Highland Granulite Complex</span>
@@ -62,7 +62,7 @@ export const AboutSabaragamuwaView = () => {
           </p>
         </div>
 
-        <div className="bg-[#f5efe3] rounded-[12px] p-6 sm:p-8 border border-[#ded5c5]">
+        <div className="bg-[#f5efe3] rounded-xl p-6 sm:p-8 border border-[#ded5c5]">
           <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#1f2622] mb-3 flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-[#4a7c59]" />
             <span>Biosphere &amp; Rainforest Stewardship</span>

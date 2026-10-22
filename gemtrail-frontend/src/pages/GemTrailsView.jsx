@@ -32,7 +32,7 @@ export const GemTrailsView = () => {
   ];
 
   return (
-    <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-8 animate-in fade-in">
+    <div className="max-w-360 mx-auto px-3 sm:px-6 lg:px-8 py-8 animate-in fade-in">
       
       {/* Title */}
       <div className="max-w-3xl mb-10">
@@ -56,7 +56,7 @@ export const GemTrailsView = () => {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="p-5 bg-[#fdfbf7] rounded-[12px] border border-[#ded5c5] shadow-xs flex flex-col justify-between">
+          <div className="p-5 bg-[#fdfbf7] rounded-xl border border-[#ded5c5] shadow-xs flex flex-col justify-between">
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#705c30]">Zone 01</span>
               <h3 className="font-serif text-lg font-bold text-[#1f2622] mt-1 mb-2">
@@ -71,7 +71,7 @@ export const GemTrailsView = () => {
             </div>
           </div>
 
-          <div className="p-5 bg-[#fdfbf7] rounded-[12px] border border-[#ded5c5] shadow-xs flex flex-col justify-between">
+          <div className="p-5 bg-[#fdfbf7] rounded-xl border border-[#ded5c5] shadow-xs flex flex-col justify-between">
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#705c30]">Zone 02</span>
               <h3 className="font-serif text-lg font-bold text-[#1f2622] mt-1 mb-2">
@@ -86,7 +86,7 @@ export const GemTrailsView = () => {
             </div>
           </div>
 
-          <div className="p-5 bg-[#fdfbf7] rounded-[12px] border border-[#ded5c5] shadow-xs flex flex-col justify-between">
+          <div className="p-5 bg-[#fdfbf7] rounded-xl border border-[#ded5c5] shadow-xs flex flex-col justify-between">
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#705c30]">Zone 03</span>
               <h3 className="font-serif text-lg font-bold text-[#1f2622] mt-1 mb-2">
@@ -101,7 +101,7 @@ export const GemTrailsView = () => {
             </div>
           </div>
 
-          <div className="p-5 bg-[#fdfbf7] rounded-[12px] border border-[#ded5c5] shadow-xs flex flex-col justify-between">
+          <div className="p-5 bg-[#fdfbf7] rounded-xl border border-[#ded5c5] shadow-xs flex flex-col justify-between">
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#705c30]">Zone 04</span>
               <h3 className="font-serif text-lg font-bold text-[#1f2622] mt-1 mb-2">
@@ -119,7 +119,7 @@ export const GemTrailsView = () => {
       </div>
 
       {/* Interactive 4-Step Traditional Mining Craft */}
-      <div className="bg-[#f5efe3] rounded-[12px] p-6 sm:p-10 border border-[#ded5c5] shadow-xs">
+      <div className="bg-[#f5efe3] rounded-xl p-6 sm:p-10 border border-[#ded5c5] shadow-xs">
         <div className="max-w-2xl mb-8">
           <span className="text-xs font-bold uppercase tracking-wider text-[#705c30]">Ethical Handcrafted Extraction</span>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1f2622] mt-1">
@@ -136,7 +136,7 @@ export const GemTrailsView = () => {
             <button
               key={s.step}
               onClick={() => setActiveStep(idx)}
-              className={`p-3.5 rounded-[12px] text-left transition-all cursor-pointer border ${
+              className={`p-3.5 rounded-xl text-left transition-all cursor-pointer border ${
                 activeStep === idx
                   ? 'bg-white border-[#4a7c59] shadow-sm ring-1 ring-[#4a7c59]'
                   : 'bg-[#ede5d6] border-[#ded5c5] hover:bg-[#e4dbca]'
@@ -153,7 +153,7 @@ export const GemTrailsView = () => {
         </div>
 
         {/* Active step display */}
-        <div className="bg-white/80 rounded-[12px] p-6 sm:p-8 border border-[#ded5c5]">
+        <div className="bg-white/80 rounded-xl p-6 sm:p-8 border border-[#ded5c5]">
           <div className="flex items-center gap-3 mb-3">
             <span className="w-8 h-8 rounded-full bg-[#4a7c59] text-white font-bold text-xs flex items-center justify-center">
               {miningSteps[activeStep].step}
@@ -165,7 +165,7 @@ export const GemTrailsView = () => {
           <p className="text-sm text-[#48504a] leading-relaxed mb-4 max-w-3xl">
             {miningSteps[activeStep].desc}
           </p>
-          <div className="p-3 bg-[#faf6f0] rounded-[12px] border border-[#ded5c5] text-xs text-[#705c30]">
+          <div className="p-3 bg-[#faf6f0] rounded-xl border border-[#ded5c5] text-xs text-[#705c30]">
             <strong>Artisanal Tools:</strong> {miningSteps[activeStep].tool}
           </div>
         </div>

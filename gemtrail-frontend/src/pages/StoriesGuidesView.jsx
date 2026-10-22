@@ -3,7 +3,7 @@ import { BookOpen, Sparkles, Compass, Shield, Award } from 'lucide-react';
 
 export const StoriesGuidesView = () => {
   return (
-    <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-8 animate-in fade-in">
+    <div className="max-w-360 mx-auto px-3 sm:px-6 lg:px-8 py-8 animate-in fade-in">
       
       {/* Header */}
       <div className="max-w-3xl mb-10">
@@ -23,7 +23,7 @@ export const StoriesGuidesView = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
         
         {/* Story 1 */}
-        <div className="bg-[#fdfbf7] rounded-[12px] p-6 sm:p-8 border border-[#ded5c5] shadow-xs flex flex-col justify-between">
+        <div className="bg-[#fdfbf7] rounded-xl p-6 sm:p-8 border border-[#ded5c5] shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 text-[#705c30] text-xs font-bold uppercase tracking-wider mb-2">
               <Sparkles className="w-3.5 h-3.5" />
@@ -42,7 +42,7 @@ export const StoriesGuidesView = () => {
         </div>
 
         {/* Story 2 */}
-        <div className="bg-[#fdfbf7] rounded-[12px] p-6 sm:p-8 border border-[#ded5c5] shadow-xs flex flex-col justify-between">
+        <div className="bg-[#fdfbf7] rounded-xl p-6 sm:p-8 border border-[#ded5c5] shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 text-[#705c30] text-xs font-bold uppercase tracking-wider mb-2">
               <Award className="w-3.5 h-3.5" />
@@ -61,7 +61,7 @@ export const StoriesGuidesView = () => {
         </div>
 
         {/* Story 3 */}
-        <div className="bg-[#fdfbf7] rounded-[12px] p-6 sm:p-8 border border-[#ded5c5] shadow-xs flex flex-col justify-between">
+        <div className="bg-[#fdfbf7] rounded-xl p-6 sm:p-8 border border-[#ded5c5] shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 text-[#705c30] text-xs font-bold uppercase tracking-wider mb-2">
               <Compass className="w-3.5 h-3.5" />
@@ -80,7 +80,7 @@ export const StoriesGuidesView = () => {
         </div>
 
         {/* Story 4 */}
-        <div className="bg-[#fdfbf7] rounded-[12px] p-6 sm:p-8 border border-[#ded5c5] shadow-xs flex flex-col justify-between">
+        <div className="bg-[#fdfbf7] rounded-xl p-6 sm:p-8 border border-[#ded5c5] shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 text-[#705c30] text-xs font-bold uppercase tracking-wider mb-2">
               <Shield className="w-3.5 h-3.5" />
