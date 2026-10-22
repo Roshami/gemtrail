@@ -1,0 +1,1 @@
+Admin creation script is in scripts/create-admin.js

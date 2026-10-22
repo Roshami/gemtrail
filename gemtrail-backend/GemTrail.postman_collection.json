@@ -1,0 +1,142 @@
+{
+  "info": {
+    "name": "GemTrail API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "placeId",
+      "value": "1"
+    },
+    {
+      "key": "itineraryId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Register Visitor",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"Test Visitor\",\"email\":\"visitor@example.com\",\"password\":\"ChangeMe123!\"}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"admin@example.com\",\"password\":\"your-password\"}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "List Places",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/places?q=waterfall&sort=rating"
+      }
+    },
+    {
+      "name": "List Categories",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/categories"
+      }
+    },
+    {
+      "name": "Top Rated",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/places/top-rated"
+      }
+    },
+    {
+      "name": "Get Place Details",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/places/{{placeId}}"
+      }
+    },
+    {
+      "name": "My Itineraries (JWT)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/itineraries"
+      }
+    },
+    {
+      "name": "Create Itinerary (JWT)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\":\"Ratnapura Day Trip\",\"trip_date\":\"2026-11-01\",\"start_location\":\"Ratnapura Town\",\"radius_km\":25,\"transport_method\":\"Car\",\"estimated_cost\":2500,\"status\":\"draft\"}"
+        },
+        "url": "{{baseUrl}}/itineraries"
+      }
+    },
+    {
+      "name": "My Favorites (JWT)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/favorites"
+      }
+    }
+  ]
+}

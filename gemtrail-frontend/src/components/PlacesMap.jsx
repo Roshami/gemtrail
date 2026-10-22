@@ -600,8 +600,8 @@ export const PlacesMap = ({
         </div>
       )}
 
-      {/* Real Leaflet Map Container */}
-      <div className="relative w-full h-[480px] sm:h-[520px] rounded-[12px] overflow-hidden shadow-inner border border-[#c4c8bc]/50">
+      {/* Real Container */}
+      <div className="relative w-full h-120 sm:h-130 rounded-xl overflow-hidden shadow-inner border border-[#c4c8bc]/50">
         
         {/* Leaflet DOM Node */}
         <div 
@@ -611,7 +611,7 @@ export const PlacesMap = ({
         />
 
         {/* Custom Zoom Controls (Top-Left) with >= 44px hitboxes */}
-        <div className="absolute top-3 left-3 flex flex-col rounded-[12px] bg-white/95 backdrop-blur shadow-md border border-[#c4c8bc]/40 z-[900] overflow-hidden text-xs">
+        <div className="absolute top-3 left-3 flex flex-col rounded-xl bg-white/95 backdrop-blur shadow-md border border-[#c4c8bc]/40 z-900 overflow-hidden text-xs">
           <button
             onClick={handleZoomIn}
             aria-label="Zoom in"
@@ -647,7 +647,7 @@ export const PlacesMap = ({
             if (onGpsLocate) onGpsLocate();
             mapInstanceRef.current?.setView([center.lat, center.lng], 11, { animate: true });
           }}
-          className="absolute top-41 left-3 z-[900] bg-white/95 backdrop-blur rounded-xl shadow-md border border-[#c4c8bc]/40 flex items-center justify-center w-11 h-11 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer transition-colors"
+          className="absolute top-41 left-3 z-900 bg-white/95 backdrop-blur rounded-xl shadow-md border border-[#c4c8bc]/40 flex items-center justify-center w-11 h-11 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer transition-colors"
           title="Recenter Map to Live Location (Your Position)"
           aria-label="Recenter Map to Live Location"
         >

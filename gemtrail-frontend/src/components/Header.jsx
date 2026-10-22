@@ -134,8 +134,8 @@ export const Header = ({
               }}
             >
               GemTrail
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                {' '}Sabaragamuwa
+             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                {' '}Ratnapura
               </Box>
             </Typography>
           </Box>

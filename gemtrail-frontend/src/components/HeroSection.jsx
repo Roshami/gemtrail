@@ -47,7 +47,7 @@ export const HeroSection = ({
         {/* Sub-kicker editorial line */}
         <div className="flex items-center justify-center gap-2 text-xs font-semibold tracking-wider uppercase mb-5 text-[#8ecf9e]">
           <Diamond className="w-3.5 h-3.5 text-[#8ecf9e]" />
-          <span>Sabaragamuwa Province, Sri Lanka</span>
+          <span>Ratnapura District, Sabaragamuwa Province, Sri Lanka</span>
           <span className="opacity-50">·</span>
           <span className="text-white/80 font-normal">The Ancient Gem Capital</span>
         </div>

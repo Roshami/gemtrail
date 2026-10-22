@@ -160,7 +160,7 @@ export const AdminLoginView = ({ onLoginSuccess, onBackToExplore }) => {
                 Admin Authentication
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                GemTrail Sabaragamuwa CMS & Landmark Portal
+                GemTrail Ratnapura CMS & Landmark Portal
               </Typography>
             </Box>
 
