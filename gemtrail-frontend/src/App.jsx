@@ -12,7 +12,7 @@ import { StoriesGuidesView } from './components/StoriesGuidesView.jsx';
 import { AboutSabaragamuwaView } from './components/AboutSabaragamuwaView.jsx';
 import { MapPageView } from './components/MapPageView.jsx';
 import { AdminPanelView } from './components/AdminPanelView.jsx';
-import { AdminLoginView } from './components/AdminLoginView.jsx';
+import { AdminLoginView } from './components/LoginView.jsx';
 import { Footer } from './components/Footer.jsx';
 import { MobileBottomNav } from './components/MobileBottomNav.jsx';
 import { getAdminSession, logoutAdmin } from './utils/adminAuth.js';

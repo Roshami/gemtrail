@@ -1,6 +1,0 @@
-{
-  "summary":  "Architectural and conceptual plan explaining GemTrail's current storage layer (Browser LocalStorage + seed data) and how to transition to live Databases (Firestore / Cloud SQL / MongoDB) and APIs (Express REST proxy / third-party travel and weather endpoints).",
-  "updatedAt":  "2026-10-11T14:12:22.745980185Z",
-  "requestFeedback":  true,
-  "userFacing":  true
-}
