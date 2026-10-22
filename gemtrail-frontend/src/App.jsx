@@ -12,7 +12,7 @@ import { StoriesGuidesView } from './components/StoriesGuidesView.jsx';
 import { AboutSabaragamuwaView } from './components/AboutSabaragamuwaView.jsx';
 import { MapPageView } from './components/MapPageView.jsx';
 import { AdminPanelView } from './components/AdminPanelView.jsx';
-import { AdminLoginView } from './components/LoginView.jsx';
+import { LoginView } from './components/LoginView.jsx';
 import { Footer } from './components/Footer.jsx';
 import { MobileBottomNav } from './components/MobileBottomNav.jsx';
 import { getAdminSession, logoutAdmin } from './utils/adminAuth.js';
@@ -22,18 +22,21 @@ import {
   saveStoredPlaces,
   resetStoredPlaces,
   getStoredDistrictInfo,
-  saveStoredDistrictInfo
+  saveStoredDistrictInfo,
 } from './utils/placesStorage.js';
 
 export default function App() {
   // Theme Mode (Material UI Light / Dark mode)
   const [themeMode, setThemeMode] = useState('light');
   const muiTheme = useMemo(() => getMuiTheme(themeMode), [themeMode]);
-  const toggleTheme = () => setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'));
+  const toggleTheme = () =>
+    setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'));
 
   // Persistent Places and District State (maintained via Admin Panel)
   const [places, setPlaces] = useState(() => getStoredPlaces());
-  const [districtInfo, setDistrictInfo] = useState(() => getStoredDistrictInfo());
+  const [districtInfo, setDistrictInfo] = useState(() =>
+    getStoredDistrictInfo(),
+  );
 
   const handleUpdatePlaces = (newPlaces) => {
     setPlaces(newPlaces);
@@ -92,14 +95,20 @@ export default function App() {
   const [directionsModalPlace, setDirectionsModalPlace] = useState(null);
 
   // Planned / Bookmarked Places
-  const [plannedIds, setPlannedIds] = useState(['bopath-ella', 'sri-pada', 'delgamuwa-rajamaha-viharaya']);
+  const [plannedIds, setPlannedIds] = useState([
+    'bopath-ella',
+    'sri-pada',
+    'delgamuwa-rajamaha-viharaya',
+  ]);
 
   const gridRef = useRef(null);
 
   // 1. Continuous Real-Time Geolocation Tracking (watchPosition with high accuracy)
   useEffect(() => {
     if (!navigator.geolocation) {
-      setGeoError('Geolocation is not supported by your browser. Defaulting to Ratnapura Town Center.');
+      setGeoError(
+        'Geolocation is not supported by your browser. Defaulting to Ratnapura Town Center.',
+      );
       return;
     }
 
@@ -108,21 +117,26 @@ export default function App() {
         const { latitude, longitude } = position.coords;
         const newCoords = {
           lat: Number(latitude.toFixed(6)),
-          lng: Number(longitude.toFixed(6))
+          lng: Number(longitude.toFixed(6)),
         };
         setCenter(newCoords);
-        setCenterName(`Your Location (${newCoords.lat.toFixed(4)}° N, ${newCoords.lng.toFixed(4)}° E)`);
+        setCenterName(
+          `Your Location (${newCoords.lat.toFixed(4)}° N, ${newCoords.lng.toFixed(4)}° E)`,
+        );
         setIsGpsLive(true);
         setGeoError(null);
         setHasReceivedFirstGps(true);
       },
       (error) => {
         console.warn('Geolocation watch error:', error);
-        let errorMsg = 'Location permission denied. Defaulting to Ratnapura Town Center (Clock Tower).';
+        let errorMsg =
+          'Location permission denied. Defaulting to Ratnapura Town Center (Clock Tower).';
         if (error.code === error.TIMEOUT) {
-          errorMsg = 'Location request timed out. Defaulting to Ratnapura Town Center.';
+          errorMsg =
+            'Location request timed out. Defaulting to Ratnapura Town Center.';
         } else if (error.code === error.POSITION_UNAVAILABLE) {
-          errorMsg = 'Location position unavailable. Defaulting to Ratnapura Town Center.';
+          errorMsg =
+            'Location position unavailable. Defaulting to Ratnapura Town Center.';
         }
         setGeoError(errorMsg);
         setIsGpsLive(false);
@@ -130,8 +144,8 @@ export default function App() {
       {
         enableHighAccuracy: true,
         timeout: 15000,
-        maximumAge: 5000
-      }
+        maximumAge: 5000,
+      },
     );
 
     return () => {
@@ -163,7 +177,12 @@ export default function App() {
   // Count of landmarks within 25km of the user's moving center
   const placesWithin25Count = useMemo(() => {
     return places.filter((p) => {
-      const dist = calculateHaversine(center.lat, center.lng, p.coordinates.lat, p.coordinates.lng);
+      const dist = calculateHaversine(
+        center.lat,
+        center.lng,
+        p.coordinates.lat,
+        p.coordinates.lng,
+      );
       return dist <= 25;
     }).length;
   }, [center, places]);
@@ -171,10 +190,15 @@ export default function App() {
   // Dynamic Filtering within 25km (Haversine distance recalculation whenever center updates)
   const filteredPlaces = useMemo(() => {
     let result = places.map((place) => {
-      const liveDistance = calculateHaversine(center.lat, center.lng, place.coordinates.lat, place.coordinates.lng);
+      const liveDistance = calculateHaversine(
+        center.lat,
+        center.lng,
+        place.coordinates.lat,
+        place.coordinates.lng,
+      );
       return {
         ...place,
-        distanceKm: liveDistance
+        distanceKm: liveDistance,
       };
     });
 
@@ -189,11 +213,15 @@ export default function App() {
     // Category filter
     if (selectedCategory !== 'all') {
       result = result.filter((p) => {
-        if (selectedCategory === 'waterfalls' && p.category === 'waterfalls') return true;
+        if (selectedCategory === 'waterfalls' && p.category === 'waterfalls')
+          return true;
         if (selectedCategory === 'mines' && p.category === 'mines') return true;
-        if (selectedCategory === 'heritage' && p.category === 'heritage') return true;
-        if (selectedCategory === 'museums' && p.category === 'museums') return true;
-        if (selectedCategory === 'tea_spice' && p.category === 'tea_spice') return true;
+        if (selectedCategory === 'heritage' && p.category === 'heritage')
+          return true;
+        if (selectedCategory === 'museums' && p.category === 'museums')
+          return true;
+        if (selectedCategory === 'tea_spice' && p.category === 'tea_spice')
+          return true;
         return p.category === selectedCategory;
       });
     }
@@ -206,7 +234,7 @@ export default function App() {
           p.name.toLowerCase().includes(q) ||
           p.shortDescription.toLowerCase().includes(q) ||
           p.categoryLabel.toLowerCase().includes(q) ||
-          p.miningContext?.toLowerCase().includes(q)
+          p.miningContext?.toLowerCase().includes(q),
       );
     }
 
@@ -224,7 +252,15 @@ export default function App() {
     });
 
     return result;
-  }, [center, radarMode, radiusKm, selectedCategory, searchQuery, sortBy, places]);
+  }, [
+    center,
+    radarMode,
+    radiusKm,
+    selectedCategory,
+    searchQuery,
+    sortBy,
+    places,
+  ]);
 
   const plannedPlaces = useMemo(() => {
     return places.filter((p) => plannedIds.includes(p.id));
@@ -232,7 +268,9 @@ export default function App() {
 
   const handleTogglePlan = (place) => {
     setPlannedIds((prev) =>
-      prev.includes(place.id) ? prev.filter((id) => id !== place.id) : [...prev, place.id]
+      prev.includes(place.id)
+        ? prev.filter((id) => id !== place.id)
+        : [...prev, place.id],
     );
   };
 
@@ -254,10 +292,12 @@ export default function App() {
         const { latitude, longitude } = pos.coords;
         const newCoords = {
           lat: Number(latitude.toFixed(6)),
-          lng: Number(longitude.toFixed(6))
+          lng: Number(longitude.toFixed(6)),
         };
         setCenter(newCoords);
-        setCenterName(`Your Location (${newCoords.lat.toFixed(4)}° N, ${newCoords.lng.toFixed(4)}° E)`);
+        setCenterName(
+          `Your Location (${newCoords.lat.toFixed(4)}° N, ${newCoords.lng.toFixed(4)}° E)`,
+        );
         setIsGpsLive(true);
         setGeoError(null);
       },
@@ -265,9 +305,11 @@ export default function App() {
         console.warn('GPS location request failed:', err);
         setCenter({ lat: 6.6828, lng: 80.3992 });
         setCenterName('Ratnapura Clock Tower (GPS: 6.6828° N, 80.3992° E)');
-        setGeoError('Location permission denied. Defaulting to Ratnapura Town Center.');
+        setGeoError(
+          'Location permission denied. Defaulting to Ratnapura Town Center.',
+        );
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
   };
 
@@ -297,12 +339,13 @@ export default function App() {
   return (
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
-      <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${
-        themeMode === 'dark' 
-          ? 'bg-[#0f172a] text-[#f8fafc] selection:bg-[#4ade80]/20 selection:text-[#ffffff]' 
-          : 'bg-[#faf6f0] text-[#2e3230] selection:bg-[#4a7c59]/20 selection:text-[#1f2622]'
-      }`}>
-        
+      <div
+        className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${
+          themeMode === 'dark'
+            ? 'bg-[#0f172a] text-[#f8fafc] selection:bg-[#4ade80]/20 selection:text-[#ffffff]'
+            : 'bg-[#faf6f0] text-[#2e3230] selection:bg-[#4a7c59]/20 selection:text-[#1f2622]'
+        }`}
+      >
         {/* 1. Header with Material UI */}
         <Header
           activeTab={activeTab}
@@ -310,17 +353,18 @@ export default function App() {
           planCount={plannedIds.length}
           themeMode={themeMode}
           onToggleTheme={toggleTheme}
-          isAdminLoggedIn={Boolean(adminUser)}
+          isAdminLoggedIn={adminUser?.role === 'admin'}
           onAdminLogout={handleAdminLogout}
         />
 
         {/* Main Content Area */}
-        <main className={`w-full pt-16 pb-20 lg:pb-0 min-h-[calc(100vh-280px)] flex-1 transition-colors duration-300 ${
-          themeMode === 'dark' ? 'bg-[#0f172a]' : 'bg-[#faf6f0]'
-        }`}>
+        <main
+          className={`w-full pt-16 pb-20 lg:pb-0 min-h-[calc(100vh-280px)] flex-1 transition-colors duration-300 ${
+            themeMode === 'dark' ? 'bg-[#0f172a]' : 'bg-[#faf6f0]'
+          }`}
+        >
           {activeTab === 'explore' && (
             <div className="flex flex-col w-full">
-              
               {/* Top Panoramic Hero Section */}
               <HeroSection
                 searchQuery={searchQuery}
@@ -372,7 +416,6 @@ export default function App() {
                   onOpenMapPage={() => setActiveTab('map')}
                 />
               </div>
-
             </div>
           )}
 
@@ -420,9 +463,18 @@ export default function App() {
           {activeTab === 'planner' && (
             <TripPlannerView
               plannedPlaces={plannedPlaces}
-              onRemoveFromPlan={(id) => setPlannedIds((prev) => prev.filter((p) => p !== id))}
+              onRemoveFromPlan={(id) =>
+                setPlannedIds((prev) => prev.filter((p) => p !== id))
+              }
               onClearPlan={() => setPlannedIds([])}
-              onAddRecommended={() => setPlannedIds(['bopath-ella', 'kahawatte-mines', 'saman-devalaya', 'national-gem-museum'])}
+              onAddRecommended={() =>
+                setPlannedIds([
+                  'bopath-ella',
+                  'kahawatte-mines',
+                  'saman-devalaya',
+                  'national-gem-museum',
+                ])
+              }
               onOpenDetails={setDetailModalPlace}
               onOpenDirections={setDirectionsModalPlace}
             />
@@ -435,8 +487,8 @@ export default function App() {
           {activeTab === 'about' && <AboutSabaragamuwaView />}
 
           {/* Tab 6: Admin Control Panel (Protected CMS) */}
-          {activeTab === 'admin' && (
-            adminUser ? (
+          {activeTab === 'admin' &&
+            (adminUser?.role === 'admin' ? (
               <AdminPanelView
                 places={places}
                 onUpdatePlaces={handleUpdatePlaces}
@@ -453,12 +505,11 @@ export default function App() {
                 }}
               />
             ) : (
-              <AdminLoginView
+              <LoginView
                 onLoginSuccess={handleAdminLogin}
                 onBackToExplore={() => setActiveTab('explore')}
               />
-            )
-          )}
+            ))}
         </main>
 
         {/* Footer */}
@@ -471,7 +522,9 @@ export default function App() {
         <PlaceDetailModal
           place={detailModalPlace}
           onClose={() => setDetailModalPlace(null)}
-          isPlanned={detailModalPlace ? plannedIds.includes(detailModalPlace.id) : false}
+          isPlanned={
+            detailModalPlace ? plannedIds.includes(detailModalPlace.id) : false
+          }
           onTogglePlan={handleTogglePlan}
           onOpenDirections={(p) => {
             setDetailModalPlace(null);
@@ -497,10 +550,9 @@ export default function App() {
           themeMode={themeMode}
           onToggleTheme={toggleTheme}
           onScrollToMap={() => setActiveTab('map')}
-          isAdminLoggedIn={Boolean(adminUser)}
+          isAdminLoggedIn={adminUser?.role === 'admin'}
           onAdminLogout={handleAdminLogout}
         />
-
       </div>
     </ThemeProvider>
   );
