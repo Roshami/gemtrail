@@ -6,13 +6,13 @@ import { HeroSection } from './components/HeroSection.jsx';
 import { Places } from './components/Places.jsx';
 import { PlaceDetailModal } from './components/PlaceDetailModal.jsx';
 import { DirectionsModal } from './components/DirectionsModal.jsx';
-import { TripPlannerView } from './components/TripPlannerView.jsx';
-import { GemTrailsView } from './components/GemTrailsView.jsx';
-import { StoriesGuidesView } from './components/StoriesGuidesView.jsx';
-import { AboutSabaragamuwaView } from './components/AboutSabaragamuwaView.jsx';
+import { TripPlannerView } from './pages/TripPlannerView.jsx';
+import { GemTrailsView } from './pages/GemTrailsView.jsx';
+import { StoriesGuidesView } from './pages/StoriesGuidesView.jsx';
+import { AboutSabaragamuwaView } from './pages/AboutSabaragamuwaView.jsx';
 import { MapPageView } from './components/MapPageView.jsx';
-import { AdminPanelView } from './components/AdminPanelView.jsx';
-import { LoginView } from './components/LoginView.jsx';
+import { AdminPanelView } from './pages/AdminPanelView.jsx';
+import { LoginView } from './pages/LoginView.jsx';
 import { Footer } from './components/Footer.jsx';
 import { MobileBottomNav } from './components/MobileBottomNav.jsx';
 import { getAdminSession, logoutAdmin } from './utils/adminAuth.js';
@@ -20,8 +20,7 @@ import { DISTRICT_INFO } from './data/ratnapuraPlaces.js';
 import {
   getStoredPlaces,
   saveStoredPlaces,
-  resetStoredPlaces,
-  getStoredDistrictInfo,
+  resetStoredPlaces, getStoredDistrictInfo,
   saveStoredDistrictInfo,
 } from './utils/placesStorage.js';
 
@@ -30,8 +29,7 @@ export default function App() {
   const [themeMode, setThemeMode] = useState('light');
   const muiTheme = useMemo(() => getMuiTheme(themeMode), [themeMode]);
   const toggleTheme = () =>
-    setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'));
-
+    setThemeMode((prev) => (prev === 'light' ?'dark' : 'light'));
   // Persistent Places and District State (maintained via Admin Panel)
   const [places, setPlaces] = useState(() => getStoredPlaces());
   const [districtInfo, setDistrictInfo] = useState(() =>

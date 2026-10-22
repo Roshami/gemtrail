@@ -471,4 +471,5 @@ export const LoginView = ({
   );
 };
 
+export const AdminLoginView = LoginView;
 export default LoginView;
