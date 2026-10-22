@@ -11,7 +11,7 @@ import {
   Divider,
   Typography,
   Chip,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import {
   Explore as ExploreIcon,
@@ -26,7 +26,7 @@ import {
   Brightness7 as Brightness7Icon,
   Close as CloseIcon,
   AdminPanelSettings as AdminIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
 
 export const MobileBottomNav = ({
@@ -40,7 +40,7 @@ export const MobileBottomNav = ({
   onToggleTheme,
   onScrollToMap,
   isAdminLoggedIn = false,
-  onAdminLogout
+  onAdminLogout,
 }) => {
   const [moreOpen, setMoreOpen] = useState(false);
   const theme = useTheme();
@@ -73,13 +73,16 @@ export const MobileBottomNav = ({
           right: 0,
           height: 60,
           zIndex: 1100,
-          bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.94)',
+          bgcolor:
+            theme.palette.mode === 'dark'
+              ? 'rgba(15, 23, 42, 0.94)'
+              : 'rgba(255, 255, 255, 0.94)',
           backdropFilter: 'blur(16px)',
           borderTop: `1px solid ${theme.palette.divider}`,
           boxShadow: '0 -4px 16px rgba(0,0,0,0.08)',
           px: 1,
           justifyContent: 'space-around',
-          alignItems: 'center'
+          alignItems: 'center',
         }}
       >
         {/* Tab 1: Explore Grid */}
@@ -100,7 +103,7 @@ export const MobileBottomNav = ({
             color: activeTab === 'explore' ? 'primary.main' : 'text.secondary',
             transition: 'color 0.2s ease',
             minHeight: 44,
-            minWidth: 44
+            minWidth: 44,
           }}
         >
           <ExploreIcon sx={{ fontSize: 22 }} />
@@ -110,7 +113,7 @@ export const MobileBottomNav = ({
               fontSize: '0.65rem',
               fontWeight: activeTab === 'explore' ? 800 : 600,
               mt: 0.25,
-              lineHeight: 1
+              lineHeight: 1,
             }}
           >
             Explore
@@ -135,10 +138,17 @@ export const MobileBottomNav = ({
             color: radarMode === 'radar' ? '#2563eb' : 'text.secondary',
             transition: 'color 0.2s ease',
             minHeight: 44,
-            minWidth: 44
+            minWidth: 44,
           }}
         >
-          <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box
+            sx={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <RadarIcon sx={{ fontSize: 22 }} />
             {radarMode === 'radar' && (
               <Box
@@ -149,7 +159,7 @@ export const MobileBottomNav = ({
                   width: 7,
                   height: 7,
                   borderRadius: '50%',
-                  bgcolor: '#2563eb'
+                  bgcolor: '#2563eb',
                 }}
               />
             )}
@@ -160,10 +170,12 @@ export const MobileBottomNav = ({
               fontSize: '0.65rem',
               fontWeight: radarMode === 'radar' ? 800 : 600,
               mt: 0.25,
-              lineHeight: 1
+              lineHeight: 1,
             }}
           >
-            {radarMode === 'radar' ? `Radar (${placesWithin25Count})` : 'All 44'}
+            {radarMode === 'radar'
+              ? `Radar (${placesWithin25Count})`
+              : 'All 44'}
           </Typography>
         </Box>
 
@@ -185,7 +197,7 @@ export const MobileBottomNav = ({
             color: activeTab === 'map' ? 'primary.main' : 'text.secondary',
             transition: 'color 0.2s ease',
             minHeight: 44,
-            minWidth: 44
+            minWidth: 44,
           }}
         >
           <MapIcon sx={{ fontSize: 22 }} />
@@ -195,7 +207,7 @@ export const MobileBottomNav = ({
               fontSize: '0.65rem',
               fontWeight: activeTab === 'map' ? 800 : 600,
               mt: 0.25,
-              lineHeight: 1
+              lineHeight: 1,
             }}
           >
             Map
@@ -220,13 +232,19 @@ export const MobileBottomNav = ({
             color: activeTab === 'planner' ? 'primary.main' : 'text.secondary',
             transition: 'color 0.2s ease',
             minHeight: 44,
-            minWidth: 44
+            minWidth: 44,
           }}
         >
           <Badge
             badgeContent={planCount}
             color="primary"
-            sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', height: 16, minWidth: 16 } }}
+            sx={{
+              '& .MuiBadge-badge': {
+                fontSize: '0.6rem',
+                height: 16,
+                minWidth: 16,
+              },
+            }}
           >
             <BookmarkIcon sx={{ fontSize: 22 }} />
           </Badge>
@@ -236,7 +254,7 @@ export const MobileBottomNav = ({
               fontSize: '0.65rem',
               fontWeight: activeTab === 'planner' ? 800 : 600,
               mt: 0.25,
-              lineHeight: 1
+              lineHeight: 1,
             }}
           >
             Itinerary
@@ -258,10 +276,12 @@ export const MobileBottomNav = ({
             border: 'none',
             cursor: 'pointer',
             p: 0,
-            color: ['trails', 'stories', 'about'].includes(activeTab) ? 'primary.main' : 'text.secondary',
+            color: ['trails', 'stories', 'about'].includes(activeTab)
+              ? 'primary.main'
+              : 'text.secondary',
             transition: 'color 0.2s ease',
             minHeight: 44,
-            minWidth: 44
+            minWidth: 44,
           }}
         >
           <MoreHorizIcon sx={{ fontSize: 24 }} />
@@ -269,9 +289,11 @@ export const MobileBottomNav = ({
             component="span"
             sx={{
               fontSize: '0.65rem',
-              fontWeight: ['trails', 'stories', 'about'].includes(activeTab) ? 800 : 600,
+              fontWeight: ['trails', 'stories', 'about'].includes(activeTab)
+                ? 800
+                : 600,
               mt: 0.25,
-              lineHeight: 1
+              lineHeight: 1,
             }}
           >
             More
@@ -291,16 +313,35 @@ export const MobileBottomNav = ({
               borderTopRightRadius: 20,
               bgcolor: theme.palette.background.default,
               p: 2.5,
-              maxHeight: '70vh'
-            }
-          }
+              maxHeight: '70vh',
+            },
+          },
         }}
       >
         {/* Grab Handle */}
-        <Box sx={{ width: 40, height: 5, bgcolor: theme.palette.divider, borderRadius: 3, mx: 'auto', mb: 2 }} />
+        <Box
+          sx={{
+            width: 40,
+            height: 5,
+            bgcolor: theme.palette.divider,
+            borderRadius: 3,
+            mx: 'auto',
+            mb: 2,
+          }}
+        />
 
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-          <Typography variant="h6" sx={{ fontFamily: '"Literata", Georgia, serif', fontWeight: 800 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: 1.5,
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ fontFamily: '"Literata", Georgia, serif', fontWeight: 800 }}
+          >
             Explorer Navigation
           </Typography>
           <Box
@@ -315,7 +356,7 @@ export const MobileBottomNav = ({
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: 'text.secondary'
+              color: 'text.secondary',
             }}
           >
             <CloseIcon fontSize="small" />
@@ -340,7 +381,7 @@ export const MobileBottomNav = ({
                 secondary="Real satellite cartography, 25km radar, and pin explorer"
                 slotProps={{
                   primary: { fontWeight: 700, fontSize: '0.9rem' },
-                  secondary: { fontSize: '0.75rem' }
+                  secondary: { fontSize: '0.75rem' },
                 }}
               />
             </ListItemButton>
@@ -363,7 +404,7 @@ export const MobileBottomNav = ({
                 secondary="Historic artisanal pits and lapidary circuits"
                 slotProps={{
                   primary: { fontWeight: 700, fontSize: '0.9rem' },
-                  secondary: { fontSize: '0.75rem' }
+                  secondary: { fontSize: '0.75rem' },
                 }}
               />
             </ListItemButton>
@@ -386,7 +427,7 @@ export const MobileBottomNav = ({
                 secondary="Cultural history, folklore, and seasonal tips"
                 slotProps={{
                   primary: { fontWeight: 700, fontSize: '0.9rem' },
-                  secondary: { fontSize: '0.75rem' }
+                  secondary: { fontSize: '0.75rem' },
                 }}
               />
             </ListItemButton>
@@ -409,7 +450,7 @@ export const MobileBottomNav = ({
                 secondary="Regional geography, climate, and heritage"
                 slotProps={{
                   primary: { fontWeight: 700, fontSize: '0.9rem' },
-                  secondary: { fontSize: '0.75rem' }
+                  secondary: { fontSize: '0.75rem' },
                 }}
               />
             </ListItemButton>
@@ -430,16 +471,31 @@ export const MobileBottomNav = ({
               <ListItemText
                 primary={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>{isAdminLoggedIn ? 'Admin Control Panel' : 'Admin Login'}</span>
+                    <span>
+                      {isAdminLoggedIn ? 'Admin' : 'Login'}
+                    </span>
                     {isAdminLoggedIn && (
-                      <Chip label="Active" size="small" color="success" sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700 }} />
+                      <Chip
+                        label="Active"
+                        size="small"
+                        color="success"
+                        sx={{
+                          height: 18,
+                          fontSize: '0.65rem',
+                          fontWeight: 700,
+                        }}
+                      />
                     )}
                   </Box>
                 }
-                secondary={isAdminLoggedIn ? "Manage landmarks, GPS, and database" : "Protected access • Sign in to maintain database"}
+                secondary={
+                  isAdminLoggedIn
+                    ? 'Manage landmarks, GPS, and database'
+                    : 'Sign in to your account'
+                }
                 slotProps={{
                   primary: { fontWeight: 700, fontSize: '0.9rem' },
-                  secondary: { fontSize: '0.75rem' }
+                  secondary: { fontSize: '0.75rem' },
                 }}
               />
             </ListItemButton>
@@ -460,7 +516,7 @@ export const MobileBottomNav = ({
                 <ListItemText
                   primary="Log Out Admin"
                   slotProps={{
-                    primary: { fontWeight: 700, fontSize: '0.85rem' }
+                    primary: { fontWeight: 700, fontSize: '0.85rem' },
                   }}
                 />
               </ListItemButton>
@@ -471,8 +527,19 @@ export const MobileBottomNav = ({
         <Divider sx={{ my: 1.5 }} />
 
         {/* Theme Mode Switch in Drawer */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1, py: 0.5 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 1,
+            py: 0.5,
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 600, color: 'text.secondary' }}
+          >
             Theme Appearance
           </Typography>
           <Box
@@ -485,15 +552,22 @@ export const MobileBottomNav = ({
               display: 'flex',
               alignItems: 'center',
               gap: 1,
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+              bgcolor:
+                theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.08)'
+                  : 'rgba(0,0,0,0.05)',
               border: `1px solid ${theme.palette.divider}`,
               cursor: 'pointer',
               color: 'text.primary',
               fontSize: '0.8rem',
-              fontWeight: 700
+              fontWeight: 700,
             }}
           >
-            {themeMode === 'dark' ? <Brightness7Icon fontSize="small" /> : <Brightness4Icon fontSize="small" />}
+            {themeMode === 'dark' ? (
+              <Brightness7Icon fontSize="small" />
+            ) : (
+              <Brightness4Icon fontSize="small" />
+            )}
             <span>{themeMode === 'dark' ? 'Light Theme' : 'Dark Theme'}</span>
           </Box>
         </Box>
