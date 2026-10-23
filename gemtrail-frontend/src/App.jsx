@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 
 import { ThemeProvider, CssBaseline } from '@mui/material';
@@ -7,9 +6,10 @@ import { getMuiTheme } from './theme/muiTheme.js';
 
 import { Header } from './components/Header.jsx';
 import { HeroSection } from './components/HeroSection.jsx';
-import { Places } from './pages/Places.jsx';
+import { Places } from './components/Places.jsx';
 import { PlaceDetailModal } from './components/PlaceDetailModal.jsx';
 import { DirectionsModal } from './components/DirectionsModal.jsx';
+
 import { TripPlannerView } from './pages/TripPlannerView.jsx';
 import { GemTrailsView } from './pages/GemTrailsView.jsx';
 import { StoriesGuidesView } from './pages/StoriesGuidesView.jsx';
@@ -17,6 +17,7 @@ import { AboutSabaragamuwaView } from './pages/AboutSabaragamuwaView.jsx';
 import { MapPageView } from './pages/MapPageView.jsx';
 import AdminPanelView from './pages/AdminPanelView.jsx';
 import { LoginView } from './pages/LoginView.jsx';
+
 import { Footer } from './components/Footer.jsx';
 import { MobileBottomNav } from './components/MobileBottomNav.jsx';
 
@@ -26,138 +27,390 @@ import { DISTRICT_INFO } from './data/ratnapuraPlaces.js';
 
 import {
   getStoredPlaces,
-  saveStoredPlaces,
   resetStoredPlaces,
   getStoredDistrictInfo,
   saveStoredDistrictInfo,
 } from './utils/placesStorage.js';
 
-// Safely validate geographic coordinates.
-const isValidCoordinate = (value, min, max) => {
-  if (value === null || value === undefined || value === '') {
-    return false;
+// ------------------------------------------------------
+// API CONFIGURATION
+// ------------------------------------------------------
+
+// Add VITE_API_URL=http://localhost:5000 to your frontend .env
+// file if your Express backend runs on port 5000.
+// Leave it empty to use a Vite proxy or same-origin backend.
+
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+
+// ------------------------------------------------------
+// API RESPONSE HELPERS
+// ------------------------------------------------------
+
+function getApiRows(response, key) {
+  if (Array.isArray(response)) {
+    return response;
   }
 
-  const number = Number(value);
-
-  return (
-    Number.isFinite(number) &&
-    number >= min &&
-    number <= max
-  );
-};
-
-const hasValidCoordinates = (place) => {
-  return (
-    place?.coordinates != null &&
-    isValidCoordinate(place.coordinates.lat, -90, 90) &&
-    isValidCoordinate(place.coordinates.lng, -180, 180)
-  );
-};
-
-// Haversine distance calculator: returns distance in kilometers.
-const calculateHaversine = (lat1, lon1, lat2, lon2) => {
-  if (
-    !isValidCoordinate(lat1, -90, 90) ||
-    !isValidCoordinate(lon1, -180, 180) ||
-    !isValidCoordinate(lat2, -90, 90) ||
-    !isValidCoordinate(lon2, -180, 180)
-  ) {
-    return Infinity;
+  if (Array.isArray(response?.[key])) {
+    return response[key];
   }
 
-  const R = 6371;
-  const toRad = (degrees) => (degrees * Math.PI) / 180;
+  if (Array.isArray(response?.data)) {
+    return response.data;
+  }
 
-  const latitude1 = Number(lat1);
-  const longitude1 = Number(lon1);
-  const latitude2 = Number(lat2);
-  const longitude2 = Number(lon2);
+  return [];
+}
 
-  const dLat = toRad(latitude2 - latitude1);
-  const dLon = toRad(longitude2 - longitude1);
+// Converts a database category name to a category key used by
+// the existing frontend filters.
 
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(latitude1)) *
-      Math.cos(toRad(latitude2)) *
-      Math.sin(dLon / 2) ** 2;
+function normalizeCategory(value) {
+  if (!value) return '';
 
-  // Clamp floating-point rounding errors.
-  const safeA = Math.min(1, Math.max(0, a));
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
 
-  const c =
-    2 * Math.atan2(Math.sqrt(safeA), Math.sqrt(1 - safeA));
+// ------------------------------------------------------
+// TOURIST PLACE NORMALIZATION
+// ------------------------------------------------------
 
-  return Number((R * c).toFixed(2));
-};
+function normalizePlace(place, categories = []) {
+  const latitude =
+    place?.latitude ?? place?.coordinates?.lat ?? null;
 
-const getPlaceName = (place) =>
-  typeof place?.name === 'string' ? place.name : '';
+  const longitude =
+    place?.longitude ?? place?.coordinates?.lng ?? null;
 
-const getPlaceDescription = (place) =>
-  typeof place?.shortDescription === 'string'
-    ? place.shortDescription
-    : '';
+  const lat =
+    latitude === null || latitude === '' ? NaN : Number(latitude);
 
-const getCategoryLabel = (place) =>
-  typeof place?.categoryLabel === 'string'
-    ? place.categoryLabel
-    : '';
+  const lng =
+    longitude === null || longitude === '' ? NaN : Number(longitude);
 
-const getEntranceFee = (place) =>
-  typeof place?.entranceFee === 'string'
-    ? place.entranceFee
-    : '';
+  const hasValidCoordinates =
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180;
 
-const getFeeAmount = (place) =>
-  parseInt(getEntranceFee(place).replace(/[^0-9]/g, ''), 10) || 0;
+  const categoryId =
+    place?.category_id ?? place?.categoryId ?? null;
+
+  const matchedCategory = categories.find(
+    (category) =>
+      String(category.id) === String(categoryId)
+  );
+
+  const categoryName =
+    place?.category_name ??
+    place?.categoryName ??
+    matchedCategory?.name ??
+    place?.categoryLabel ??
+    place?.category ??
+    '';
+
+  let visitingTips = [];
+
+  const rawTips =
+    place?.visiting_tips ?? place?.visitingTips ?? [];
+
+  if (Array.isArray(rawTips)) {
+    visitingTips = rawTips;
+  } else if (typeof rawTips === 'string') {
+    try {
+      const parsed = JSON.parse(rawTips);
+      visitingTips = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      visitingTips = rawTips ? [rawTips] : [];
+    }
+  }
+
+  return {
+    ...place,
+
+    // Keep database IDs as strings so they are consistent across
+    // database records, bookmark IDs, and component comparisons.
+    id: String(place.id),
+
+    name: place.name ?? '',
+
+    categoryId,
+
+    category: normalizeCategory(
+      place?.category_slug ??
+        place?.categorySlug ??
+        place?.category_key ??
+        place?.categoryKey ??
+        categoryName
+    ),
+
+    categoryLabel: categoryName,
+
+    shortDescription:
+      place?.short_description ??
+      place?.shortDescription ??
+      '',
+
+    description: place?.description ?? '',
+
+    location: place?.location ?? '',
+
+    coordinates: hasValidCoordinates
+      ? { lat, lng }
+      : null,
+
+    openingHours:
+      place?.opening_hours ??
+      place?.openingHours ??
+      '',
+
+    entranceFee:
+      place?.entrance_fee ??
+      place?.entranceFee ??
+      'Free',
+
+    transportInfo:
+      place?.transport_info ??
+      place?.transportInfo ??
+      '',
+
+    travelTime:
+      place?.travel_time ??
+      place?.travelTime ??
+      '',
+
+    visitDuration:
+      place?.visit_duration ??
+      place?.visitDuration ??
+      '',
+
+    rating:
+      place?.rating == null || place.rating === ''
+        ? 0
+        : Number(place.rating) || 0,
+
+    district: place?.district ?? 'Ratnapura',
+
+    imageUrl:
+      place?.image_url ??
+      place?.imageUrl ??
+      '',
+
+    secondaryImageUrl:
+      place?.secondary_image_url ??
+      place?.secondaryImageUrl ??
+      '',
+
+    bestTime:
+      place?.best_time ??
+      place?.bestTime ??
+      '',
+
+    contact: place?.contact ?? '',
+
+    elevationMeters:
+      place?.elevation_meters ??
+      place?.elevationMeters ??
+      null,
+
+    miningContext:
+      place?.mining_context ??
+      place?.miningContext ??
+      '',
+
+    visitingTips,
+
+    isActive: Number(place?.is_active ?? place?.isActive ?? 1) === 1,
+  };
+}
+
+// ------------------------------------------------------
+// COORDINATE VALIDATION
+// ------------------------------------------------------
+
+function hasValidCoordinates(place) {
+  const coordinates = place?.coordinates;
+
+  if (!coordinates) return false;
+
+  const lat = Number(coordinates.lat);
+  const lng = Number(coordinates.lng);
+
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
+// ------------------------------------------------------
+// MAIN APP
+// ------------------------------------------------------
 
 export default function App() {
-  // --------------------------------------------------
   // Theme
-  // --------------------------------------------------
-
   const [themeMode, setThemeMode] = useState('light');
 
   const muiTheme = useMemo(
     () => getMuiTheme(themeMode),
-    [themeMode],
+    [themeMode]
   );
 
   const toggleTheme = () => {
     setThemeMode((previous) =>
-      previous === 'light' ? 'dark' : 'light',
+      previous === 'light' ? 'dark' : 'light'
     );
   };
 
-  // --------------------------------------------------
-  // Places and district information
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // BACKEND PLACES AND CATEGORIES
+  // ----------------------------------------------------
 
   const [places, setPlaces] = useState(() => {
-    const storedPlaces = getStoredPlaces();
-    return Array.isArray(storedPlaces) ? storedPlaces : [];
+    try {
+      const storedPlaces = getStoredPlaces();
+
+      return Array.isArray(storedPlaces)
+        ? storedPlaces.map((place) => normalizePlace(place))
+        : [];
+    } catch (error) {
+      console.error('Could not read locally stored places:', error);
+      return [];
+    }
   });
 
+  const [categories, setCategories] = useState([]);
+
+  const [placesLoading, setPlacesLoading] = useState(true);
+
+  const [apiError, setApiError] = useState('');
+
   const [districtInfo, setDistrictInfo] = useState(() =>
-    getStoredDistrictInfo(),
+    getStoredDistrictInfo()
   );
 
-  const handleUpdatePlaces = (newPlaces) => {
-    if (!Array.isArray(newPlaces)) {
-      console.error('Invalid places data: expected an array.');
-      return;
+  // Load tourist places and categories from Express/MySQL.
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadBackendData() {
+      setPlacesLoading(true);
+      setApiError('');
+
+      try {
+        const [placesResponse, categoriesResponse] =
+          await Promise.all([
+            fetch(`${API_BASE_URL}/api/places`, {
+              signal: controller.signal,
+            }),
+
+            fetch(`${API_BASE_URL}/api/categories`, {
+              signal: controller.signal,
+            }),
+          ]);
+
+        if (!placesResponse.ok) {
+          throw new Error(
+            `Places API returned HTTP ${placesResponse.status}`
+          );
+        }
+
+        if (!categoriesResponse.ok) {
+          throw new Error(
+            `Categories API returned HTTP ${categoriesResponse.status}`
+          );
+        }
+
+        const placesJson = await placesResponse.json();
+
+        const categoriesJson =
+          await categoriesResponse.json();
+
+        const backendCategories = getApiRows(
+          categoriesJson,
+          'categories'
+        );
+
+        const backendPlaces = getApiRows(
+          placesJson,
+          'places'
+        )
+          .filter(
+            (place) =>
+              Number(place?.is_active ?? 1) === 1
+          )
+          .map((place) =>
+            normalizePlace(place, backendCategories)
+          );
+
+        setCategories(backendCategories);
+        setPlaces(backendPlaces);
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          return;
+        }
+
+        console.error('Backend loading error:', error);
+
+        setApiError(
+          'Unable to load tourist places from the backend. ' +
+            'Check your Express server, API routes, and database connection.'
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setPlacesLoading(false);
+        }
+      }
     }
 
-    setPlaces(newPlaces);
-    saveStoredPlaces(newPlaces);
+    loadBackendData();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  // ----------------------------------------------------
+  // PLACE HANDLERS
+  // ----------------------------------------------------
+
+  // The AdminPanelView currently receives the same props as in
+  // the original app. These handlers preserve local behavior.
+  //
+  // To persist admin changes in MySQL, connect these handlers
+  // to the POST/PUT/DELETE endpoints implemented in routes/places.js.
+
+  const handleUpdatePlaces = (newPlaces) => {
+    if (!Array.isArray(newPlaces)) return;
+
+    const normalizedPlaces = newPlaces.map((place) =>
+      normalizePlace(place, categories)
+    );
+
+    setPlaces(normalizedPlaces);
   };
 
   const handleResetPlaces = () => {
     const defaults = resetStoredPlaces();
 
-    setPlaces(Array.isArray(defaults) ? defaults : []);
+    if (Array.isArray(defaults)) {
+      setPlaces(
+        defaults.map((place) =>
+          normalizePlace(place, categories)
+        )
+      );
+    }
   };
 
   const handleUpdateDistrictInfo = (newInfo) => {
@@ -165,30 +418,13 @@ export default function App() {
     saveStoredDistrictInfo(newInfo);
   };
 
-  // Report malformed place records during development.
-  useEffect(() => {
-    const invalidPlaces = places.filter(
-      (place) => !hasValidCoordinates(place),
-    );
-
-    if (invalidPlaces.length > 0) {
-      console.warn(
-        'Places with missing or invalid coordinates:',
-        invalidPlaces.map((place) => ({
-          id: place?.id,
-          name: place?.name,
-          coordinates: place?.coordinates,
-        })),
-      );
-    }
-  }, [places]);
-
-  // --------------------------------------------------
-  // Admin authentication
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // ADMIN AUTHENTICATION
+  // ----------------------------------------------------
 
   const [adminUser, setAdminUser] = useState(() => {
     const session = getAdminSession();
+
     return session ? session.user : null;
   });
 
@@ -201,50 +437,61 @@ export default function App() {
     setAdminUser(null);
   };
 
-  // --------------------------------------------------
-  // Navigation
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // NAVIGATION
+  // ----------------------------------------------------
 
   const [activeTab, setActiveTab] = useState('explore');
 
-  // --------------------------------------------------
-  // Location and radar settings
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // GEOLOCATION AND DISTANCE
+  // ----------------------------------------------------
 
-  const [center, setCenter] = useState(DISTRICT_INFO.coordinates);
+  const [center, setCenter] = useState(
+    DISTRICT_INFO.coordinates
+  );
 
   const [centerName, setCenterName] = useState(
-    'Ratnapura Town Center',
+    'Your Location (Center Point)'
   );
 
   const [radiusKm, setRadiusKm] = useState(25);
+
   const [isPickingOnMap, setIsPickingOnMap] = useState(false);
 
   const [radarMode, setRadarMode] = useState('radar');
-  const [isGpsLive, setIsGpsLive] = useState(false);
-  const [geoError, setGeoError] = useState(null);
-  const [hasReceivedFirstGps, setHasReceivedFirstGps] = useState(false);
 
-  // --------------------------------------------------
-  // Search and filters
-  // --------------------------------------------------
+  const [isGpsLive, setIsGpsLive] = useState(false);
+
+  const [geoError, setGeoError] = useState(null);
+
+  const [, setHasReceivedFirstGps] = useState(false);
+
+  // ----------------------------------------------------
+  // SEARCH AND FILTERING
+  // ----------------------------------------------------
 
   const [searchQuery, setSearchQuery] = useState('');
+
   const [selectedCategory, setSelectedCategory] = useState('all');
+
   const [sortBy, setSortBy] = useState('distance');
+
   const [viewMode, setViewMode] = useState('map_and_cards');
 
-  // --------------------------------------------------
-  // Selected places and modals
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // SELECTED PLACES AND MODALS
+  // ----------------------------------------------------
 
   const [activePlace, setActivePlace] = useState(null);
+
   const [detailModalPlace, setDetailModalPlace] = useState(null);
+
   const [directionsModalPlace, setDirectionsModalPlace] = useState(null);
 
-  // --------------------------------------------------
-  // Planned places
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // PLANNED / BOOKMARKED PLACES
+  // ----------------------------------------------------
 
   const [plannedIds, setPlannedIds] = useState([
     'bopath-ella',
@@ -254,16 +501,18 @@ export default function App() {
 
   const gridRef = useRef(null);
 
-  // --------------------------------------------------
-  // Continuous GPS tracking
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // REAL-TIME GEOLOCATION TRACKING
+  // ----------------------------------------------------
 
   useEffect(() => {
     if (!navigator.geolocation) {
       setGeoError(
-        'Geolocation is not supported by your browser. Defaulting to Ratnapura Town Center.',
+        'Geolocation is not supported by your browser. ' +
+          'Defaulting to Ratnapura Town Center.'
       );
-      return undefined;
+
+      return;
     }
 
     const watchId = navigator.geolocation.watchPosition(
@@ -278,38 +527,40 @@ export default function App() {
         setCenter(newCoords);
 
         setCenterName(
-          `Your Location (${newCoords.lat.toFixed(4)}° N, ${newCoords.lng.toFixed(4)}° E)`,
+          `Your Location (${newCoords.lat.toFixed(4)}° N, ` +
+            `${newCoords.lng.toFixed(4)}° E)`
         );
 
         setIsGpsLive(true);
         setGeoError(null);
         setHasReceivedFirstGps(true);
       },
+
       (error) => {
         console.warn('Geolocation watch error:', error);
 
-        let errorMessage =
-          'Location permission denied. Defaulting to Ratnapura Town Center (Clock Tower).';
+        let errorMsg =
+          'Location permission denied. Defaulting to Ratnapura Town Center.';
 
         if (error.code === error.TIMEOUT) {
-          errorMessage =
+          errorMsg =
             'Location request timed out. Defaulting to Ratnapura Town Center.';
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          errorMessage =
+        } else if (
+          error.code === error.POSITION_UNAVAILABLE
+        ) {
+          errorMsg =
             'Location position unavailable. Defaulting to Ratnapura Town Center.';
-        } else if (error.code === error.PERMISSION_DENIED) {
-          errorMessage =
-            'Location permission denied. Defaulting to Ratnapura Town Center.';
         }
 
-        setGeoError(errorMessage);
+        setGeoError(errorMsg);
         setIsGpsLive(false);
       },
+
       {
         enableHighAccuracy: true,
         timeout: 15000,
         maximumAge: 5000,
-      },
+      }
     );
 
     return () => {
@@ -317,10 +568,68 @@ export default function App() {
     };
   }, []);
 
-  // --------------------------------------------------
-  // Count landmarks within 25 km
-  // FIX: never access coordinates without validation.
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // HAVERSINE DISTANCE CALCULATION
+  // ----------------------------------------------------
+
+  const calculateHaversine = (
+    lat1,
+    lon1,
+    lat2,
+    lon2
+  ) => {
+    const values = [lat1, lon1, lat2, lon2].map(Number);
+
+    if (!values.every(Number.isFinite)) {
+      return Infinity;
+    }
+
+    const [latitude1, longitude1, latitude2, longitude2] =
+      values;
+
+    const R = 6371;
+
+    const toRad = (degrees) =>
+      (degrees * Math.PI) / 180;
+
+    const dLat = toRad(latitude2 - latitude1);
+
+    const dLon = toRad(longitude2 - longitude1);
+
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(latitude1)) *
+        Math.cos(toRad(latitude2)) *
+        Math.sin(dLon / 2) ** 2;
+
+    const safeA = Math.min(1, Math.max(0, a));
+
+    const c =
+      2 *
+      Math.atan2(
+        Math.sqrt(safeA),
+        Math.sqrt(1 - safeA)
+      );
+
+    return Number((R * c).toFixed(2));
+  };
+
+  const calculateDistance = (coord1, coord2) => {
+    if (!coord1 || !coord2) {
+      return Infinity;
+    }
+
+    return calculateHaversine(
+      coord1.lat,
+      coord1.lng,
+      coord2.lat,
+      coord2.lng
+    );
+  };
+
+  // ----------------------------------------------------
+  // LANDMARK COUNT WITHIN 25 KM
+  // ----------------------------------------------------
 
   const placesWithin25Count = useMemo(() => {
     return places.filter((place) => {
@@ -329,86 +638,129 @@ export default function App() {
       }
 
       const distance = calculateHaversine(
-        center?.lat,
-        center?.lng,
+        center.lat,
+        center.lng,
         place.coordinates.lat,
-        place.coordinates.lng,
+        place.coordinates.lng
       );
 
       return distance <= 25;
     }).length;
   }, [center, places]);
 
-  // --------------------------------------------------
-  // Filter, search and sort places
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // FILTERED AND SORTED PLACES
+  // ----------------------------------------------------
 
   const filteredPlaces = useMemo(() => {
-    // Remove malformed records before calculating distances.
+    // Exclude records with missing or invalid coordinates
+    // before using them for map or distance calculations.
     let result = places
-      .filter((place) => hasValidCoordinates(place))
+      .filter(hasValidCoordinates)
       .map((place) => {
         const liveDistance = calculateHaversine(
-          center?.lat,
-          center?.lng,
+          center.lat,
+          center.lng,
           place.coordinates.lat,
-          place.coordinates.lng,
+          place.coordinates.lng
         );
 
         return {
           ...place,
           distanceKm: liveDistance,
         };
-      })
-      .filter((place) => Number.isFinite(place.distanceKm));
+      });
 
-    // Radar mode: only places within 25 km.
+    // Radar / radius filtering
     if (radarMode === 'radar') {
-      result = result.filter((place) => place.distanceKm <= 25);
+      result = result.filter(
+        (place) => place.distanceKm <= 25
+      );
     } else if (radiusKm < 100) {
       result = result.filter(
-        (place) => place.distanceKm <= radiusKm,
+        (place) => place.distanceKm <= radiusKm
       );
     }
 
-    // Category filtering.
+    // Category filtering
     if (selectedCategory !== 'all') {
-      result = result.filter(
-        (place) => place.category === selectedCategory,
-      );
-    }
-
-    // Search filtering.
-    const query = searchQuery.trim().toLowerCase();
-
-    if (query) {
       result = result.filter((place) => {
+        const placeCategory = normalizeCategory(
+          place.category
+        );
+
+        const selected = normalizeCategory(
+          selectedCategory
+        );
+
         return (
-          getPlaceName(place).toLowerCase().includes(query) ||
-          getPlaceDescription(place).toLowerCase().includes(query) ||
-          getCategoryLabel(place).toLowerCase().includes(query) ||
-          (typeof place.miningContext === 'string' &&
-            place.miningContext.toLowerCase().includes(query))
+          placeCategory === selected ||
+          String(place.categoryId) === String(selectedCategory)
         );
       });
     }
 
-    // Sorting.
+    // Search filtering
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+
+      result = result.filter((place) => {
+        const searchableFields = [
+          place.name,
+          place.shortDescription,
+          place.categoryLabel,
+          place.location,
+          place.district,
+          place.miningContext,
+        ];
+
+        return searchableFields.some((field) =>
+          String(field ?? '')
+            .toLowerCase()
+            .includes(query)
+        );
+      });
+    }
+
+    // Sorting
     result.sort((a, b) => {
       if (sortBy === 'distance') {
         return a.distanceKm - b.distanceKm;
       }
 
       if (sortBy === 'rating') {
-        return (Number(b.rating) || 0) - (Number(a.rating) || 0);
+        return (
+          (Number(b.rating) || 0) -
+          (Number(a.rating) || 0)
+        );
       }
 
       if (sortBy === 'name') {
-        return getPlaceName(a).localeCompare(getPlaceName(b));
+        return String(a.name ?? '').localeCompare(
+          String(b.name ?? '')
+        );
       }
 
       if (sortBy === 'fee') {
-        return getFeeAmount(a) - getFeeAmount(b);
+        const feeA =
+          parseInt(
+            String(a.entranceFee ?? '').replace(
+              /[^0-9]/g,
+              ''
+            ),
+            10
+          ) || 0;
+
+        const feeB =
+          parseInt(
+            String(b.entranceFee ?? '').replace(
+              /[^0-9]/g,
+              ''
+            ),
+            10
+          ) || 0;
+
+        return feeA - feeB;
       }
 
       return 0;
@@ -425,48 +777,44 @@ export default function App() {
     places,
   ]);
 
-  // --------------------------------------------------
-  // Planned places
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // PLANNED PLACES
+  // ----------------------------------------------------
 
   const plannedPlaces = useMemo(() => {
-    return places.filter(
-      (place) => plannedIds.includes(place.id),
+    return places.filter((place) =>
+      plannedIds.includes(place.id)
     );
   }, [plannedIds, places]);
 
   const handleTogglePlan = (place) => {
-    if (!place?.id) {
-      return;
-    }
-
     setPlannedIds((previous) =>
       previous.includes(place.id)
         ? previous.filter((id) => id !== place.id)
-        : [...previous, place.id],
+        : [...previous, place.id]
     );
   };
 
-  // --------------------------------------------------
-  // Location controls
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // MAP CENTER HANDLERS
+  // ----------------------------------------------------
 
   const handleResetCenter = () => {
     setCenter(DISTRICT_INFO.coordinates);
+
     setCenterName('Ratnapura Town Center');
+
     setIsPickingOnMap(false);
   };
 
   const handleGpsLocate = () => {
     if (!navigator.geolocation) {
-      setCenter(DISTRICT_INFO.coordinates);
-      setCenterName('Ratnapura Town Center');
+      setCenter({ lat: 6.6828, lng: 80.3992 });
 
-      setGeoError(
-        'Geolocation is not supported by your browser.',
+      setCenterName(
+        'Ratnapura Clock Tower (GPS: 6.6828° N, 80.3992° E)'
       );
 
-      setIsGpsLive(false);
       return;
     }
 
@@ -482,56 +830,58 @@ export default function App() {
         setCenter(newCoords);
 
         setCenterName(
-          `Your Location (${newCoords.lat.toFixed(4)}° N, ${newCoords.lng.toFixed(4)}° E)`,
+          `Your Location (${newCoords.lat.toFixed(4)}° N, ` +
+            `${newCoords.lng.toFixed(4)}° E)`
         );
 
         setIsGpsLive(true);
         setGeoError(null);
-        setHasReceivedFirstGps(true);
       },
+
       (error) => {
         console.warn('GPS location request failed:', error);
 
-        setCenter(DISTRICT_INFO.coordinates);
-        setCenterName('Ratnapura Town Center');
+        setCenter({ lat: 6.6828, lng: 80.3992 });
 
-        setIsGpsLive(false);
+        setCenterName(
+          'Ratnapura Clock Tower (GPS: 6.6828° N, 80.3992° E)'
+        );
 
         setGeoError(
-          error.code === error.TIMEOUT
-            ? 'Location request timed out. Defaulting to Ratnapura Town Center.'
-            : 'Unable to access your location. Defaulting to Ratnapura Town Center.',
+          'Location permission denied. Defaulting to Ratnapura Town Center.'
         );
       },
+
       {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 0,
-      },
+      }
     );
   };
 
-  // --------------------------------------------------
-  // Filter controls
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // FILTER AND SCROLL HANDLERS
+  // ----------------------------------------------------
 
   const handleClearFilters = () => {
     setSelectedCategory('all');
     setSearchQuery('');
     setRadiusKm(25);
     setRadarMode('radar');
-    setSortBy('distance');
   };
 
   const handleScrollToGrid = () => {
-    gridRef.current?.scrollIntoView({
-      behavior: 'smooth',
-    });
+    if (gridRef.current) {
+      gridRef.current.scrollIntoView({
+        behavior: 'smooth',
+      });
+    }
   };
 
   const handleSelectAttractionByName = (name) => {
     const found = places.find(
-      (place) => place.name === name,
+      (place) => place.name === name
     );
 
     if (found) {
@@ -546,9 +896,9 @@ export default function App() {
     }
   };
 
-  // --------------------------------------------------
-  // Render
-  // --------------------------------------------------
+  // ----------------------------------------------------
+  // RENDER
+  // ----------------------------------------------------
 
   return (
     <ThemeProvider theme={muiTheme}>
@@ -561,6 +911,7 @@ export default function App() {
             : 'bg-[#faf6f0] text-[#2e3230] selection:bg-[#4a7c59]/20 selection:text-[#1f2622]'
         }`}
       >
+        {/* Header */}
         <Header
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -571,6 +922,7 @@ export default function App() {
           onAdminLogout={handleAdminLogout}
         />
 
+        {/* Main content */}
         <main
           className={`w-full pt-16 pb-20 lg:pb-0 min-h-[calc(100vh-280px)] flex-1 transition-colors duration-300 ${
             themeMode === 'dark'
@@ -578,7 +930,34 @@ export default function App() {
               : 'bg-[#faf6f0]'
           }`}
         >
-          {/* Explore page */}
+          {/* Backend loading and error messages */}
+          {placesLoading && (
+            <div
+              role="status"
+              className="p-4 text-center"
+            >
+              Loading tourist places...
+            </div>
+          )}
+
+          {apiError && (
+            <div
+              role="alert"
+              className="mx-4 my-3 rounded-lg border border-red-300 bg-red-50 p-4 text-red-700"
+            >
+              <p>{apiError}</p>
+
+              <button
+                type="button"
+                className="mt-2 underline"
+                onClick={() => window.location.reload()}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Explore tab */}
           {activeTab === 'explore' && (
             <div className="flex flex-col w-full">
               <HeroSection
@@ -590,7 +969,10 @@ export default function App() {
                 onOpenMapClick={() => setActiveTab('map')}
               />
 
-              <div ref={gridRef} className="w-full pt-4">
+              <div
+                ref={gridRef}
+                className="w-full pt-4"
+              >
                 <Places
                   places={filteredPlaces}
                   totalInBoundary={places.length}
@@ -601,13 +983,6 @@ export default function App() {
                   radiusKm={radiusKm}
                   onRadiusChange={setRadiusKm}
                   onCenterChange={(coords, name) => {
-                    if (
-                      !isValidCoordinate(coords?.lat, -90, 90) ||
-                      !isValidCoordinate(coords?.lng, -180, 180)
-                    ) {
-                      return;
-                    }
-
                     setCenter(coords);
 
                     if (name) {
@@ -631,7 +1006,9 @@ export default function App() {
                   onTogglePlan={handleTogglePlan}
                   onOpenDetails={setDetailModalPlace}
                   onOpenDirections={setDirectionsModalPlace}
-                  onViewInPlanner={() => setActiveTab('planner')}
+                  onViewInPlanner={() =>
+                    setActiveTab('planner')
+                  }
                   radarMode={radarMode}
                   onRadarModeChange={setRadarMode}
                   isGpsLive={isGpsLive}
@@ -657,13 +1034,6 @@ export default function App() {
               radiusKm={radiusKm}
               onRadiusChange={setRadiusKm}
               onCenterChange={(coords, name) => {
-                if (
-                  !isValidCoordinate(coords?.lat, -90, 90) ||
-                  !isValidCoordinate(coords?.lng, -180, 180)
-                ) {
-                  return;
-                }
-
                 setCenter(coords);
 
                 if (name) {
@@ -690,7 +1060,9 @@ export default function App() {
               geoError={geoError}
               placesWithin25Count={placesWithin25Count}
               onClearFilters={handleClearFilters}
-              onNavigateToExplore={() => setActiveTab('explore')}
+              onNavigateToExplore={() =>
+                setActiveTab('explore')
+              }
             />
           )}
 
@@ -701,11 +1073,13 @@ export default function App() {
           {activeTab === 'planner' && (
             <TripPlannerView
               plannedPlaces={plannedPlaces}
-              onRemoveFromPlan={(id) =>
+              onRemoveFromPlan={(id) => {
                 setPlannedIds((previous) =>
-                  previous.filter((placeId) => placeId !== id),
-                )
-              }
+                  previous.filter(
+                    (placeId) => placeId !== id
+                  )
+                );
+              }}
               onClearPlan={() => setPlannedIds([])}
               onAddRecommended={() =>
                 setPlannedIds([
@@ -721,10 +1095,14 @@ export default function App() {
           )}
 
           {/* Stories and guides */}
-          {activeTab === 'stories' && <StoriesGuidesView />}
+          {activeTab === 'stories' && (
+            <StoriesGuidesView />
+          )}
 
           {/* About Sabaragamuwa */}
-          {activeTab === 'about' && <AboutSabaragamuwaView />}
+          {activeTab === 'about' && (
+            <AboutSabaragamuwaView />
+          )}
 
           {/* Admin panel */}
           {activeTab === 'admin' &&
@@ -737,8 +1115,12 @@ export default function App() {
                 onResetPlaces={handleResetPlaces}
                 adminUser={adminUser}
                 onLogout={handleAdminLogout}
-                onNavigateToExplore={() => setActiveTab('explore')}
-                onNavigateToMap={() => setActiveTab('map')}
+                onNavigateToExplore={() =>
+                  setActiveTab('explore')
+                }
+                onNavigateToMap={() =>
+                  setActiveTab('map')
+                }
                 onPreviewPlace={(place) => {
                   setActivePlace(place);
                   setDetailModalPlace(place);
@@ -747,7 +1129,9 @@ export default function App() {
             ) : (
               <LoginView
                 onLoginSuccess={handleAdminLogin}
-                onBackToExplore={() => setActiveTab('explore')}
+                onBackToExplore={() =>
+                  setActiveTab('explore')
+                }
               />
             ))}
         </main>
@@ -755,7 +1139,9 @@ export default function App() {
         {/* Footer */}
         <Footer
           onNavigateTab={setActiveTab}
-          onSelectAttractionByName={handleSelectAttractionByName}
+          onSelectAttractionByName={
+            handleSelectAttractionByName
+          }
         />
 
         {/* Place details modal */}
