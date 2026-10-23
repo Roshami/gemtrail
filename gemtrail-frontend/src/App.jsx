@@ -11,7 +11,7 @@ import { GemTrailsView } from './pages/GemTrailsView.jsx';
 import { StoriesGuidesView } from './pages/StoriesGuidesView.jsx';
 import { AboutSabaragamuwaView } from './pages/AboutSabaragamuwaView.jsx';
 import { MapPageView } from './pages/MapPageView.jsx';
-import { AdminPanelView } from './pages/AdminPanelView.jsx';
+import AdminPanelView from './pages/AdminPanelView.jsx';
 import { LoginView } from './pages/LoginView.jsx';
 import { Footer } from './components/Footer.jsx';
 import { MobileBottomNav } from './components/MobileBottomNav.jsx';
@@ -23,6 +23,7 @@ import {
   resetStoredPlaces, getStoredDistrictInfo,
   saveStoredDistrictInfo,
 } from './utils/placesStorage.js';
+
 
 
 export default function App() {

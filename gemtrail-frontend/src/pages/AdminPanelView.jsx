@@ -1,1799 +1,1096 @@
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Box,
-  Typography,
   Button,
   Card,
   CardContent,
-  TextField,
-  InputAdornment,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
   FormControl,
+  FormControlLabel,
+  Grid,
+  IconButton,
+  InputAdornment,
   InputLabel,
-  Select,
   MenuItem,
+  Paper,
+  Select,
+  Snackbar,
+  Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Tabs,
-  Tab,
-  Alert,
-  Snackbar,
+  TextField,
   Tooltip,
-  Divider,
-  Rating,
-  useTheme
+  Typography,
 } from '@mui/material';
+
 import {
-  Search as SearchIcon,
   Add as AddIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
-  ContentCopy as DuplicateIcon,
-  FileDownload as ExportIcon,
-  FileUpload as ImportIcon,
-  RestartAlt as ResetIcon,
-  Visibility as ViewIcon,
-  Dashboard as DashboardIcon,
-  Place as PlaceIcon,
-  Settings as SettingsIcon,
-  Storage as StorageIcon,
+  EditOutlined as EditIcon,
+  Search as SearchIcon,
+  Refresh as RefreshIcon,
+  VisibilityOutlined as ViewIcon,
   Close as CloseIcon,
-  WaterDrop as WaterDropIcon,
-  Forest as ForestIcon,
-  Diamond as DiamondIcon,
-  AccountBalance as AccountBalanceIcon,
-  Museum as MuseumIcon,
-  Spa as SpaIcon,
-  CheckCircle as CheckCircleIcon,
-  ArrowBack as ArrowBackIcon,
-  MyLocation as LocationIcon,
-  Logout as LogoutIcon,
-  VpnKey as KeyIcon,
-  Lock as LockIcon,
-  Shield as ShieldIcon,
-  Person as PersonIcon,
-  Security as SecurityIcon,
-  LockReset as LockResetIcon
+  Place as PlaceIcon,
+  Star as StarIcon,
 } from '@mui/icons-material';
-import { updateAdminPassword, resetAdminCredentials } from '../utils/adminAuth.js';
 
-const CATEGORIES = [
-  { id: 'waterfalls', label: 'Waterfalls & Nature', icon: <WaterDropIcon fontSize="small" /> },
-  { id: 'mines', label: 'Gem Mines & Pits', icon: <DiamondIcon fontSize="small" /> },
-  { id: 'heritage', label: 'Cultural & Heritage', icon: <AccountBalanceIcon fontSize="small" /> },
-  { id: 'museums', label: 'Museums & Archives', icon: <MuseumIcon fontSize="small" /> },
-  { id: 'nature', label: 'Rainforest & Wildlife', icon: <ForestIcon fontSize="small" /> },
-  { id: 'tea_spice', label: 'Tea & Agro-Tech', icon: <SpaIcon fontSize="small" /> }
-];
-
-const PRESET_COORDINATES = [
-  { label: 'Ratnapura Clock Tower', lat: 6.6828, lng: 80.3992 },
-  { label: 'Kuruvita Junction', lat: 6.7720, lng: 80.3700 },
-  { label: 'Pelmadulla Town', lat: 6.6234, lng: 80.5489 },
-  { label: 'Balangoda Plateau', lat: 6.6492, lng: 80.7011 },
-  { label: 'Kalawana Sinharaja Gateway', lat: 6.5298, lng: 80.4078 },
-  { label: 'Adam’s Peak Pilgrim Base', lat: 6.8123, lng: 80.5052 },
-  { label: 'Kahawatte Gem Belt', lat: 6.5812, lng: 80.5780 }
-];
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const EMPTY_PLACE = {
-  id: '',
+  category_id: '',
   name: '',
-  category: 'waterfalls',
-  categoryLabel: 'Waterfalls & Nature',
-  rating: 4.8,
-  entranceFee: 'Free Entry',
-  coordinates: { lat: 6.6828, lng: 80.3992 },
-  openStatus: '• Open Now • 7:00 AM – 6:00 PM',
-  shortDescription: '',
-  detailedDescription: '',
-  image: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&w=1200&q=80',
-  secondaryImage: 'https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?auto=format&fit=crop&w=1200&q=80',
-  miningContext: '',
-  elevationMeters: 150,
-  visitingTips: ['Wear appropriate footwear', 'Carry water and rain gear'],
-  bestTime: 'Morning (8:00 AM – 11:30 AM)',
-  contact: '+94 45 222 2235 (District Tourism Information)'
+  short_description: '',
+  description: '',
+  location: '',
+  latitude: '',
+  longitude: '',
+  opening_hours: '',
+  entrance_fee: '',
+  transport_info: '',
+  travel_time: '',
+  visit_duration: '',
+  rating: '',
+  district: 'Ratnapura',
+  image_url: '',
+  secondary_image_url: '',
+  best_time: '',
+  contact: '',
+  elevation_meters: '',
+  mining_context: '',
+  visiting_tips: '',
+  is_active: true,
 };
 
-export const AdminPanelView = ({
-  places = [],
+const FIELD_GROUPS = [
+  {
+    title: 'Basic Information',
+    fields: [
+      { name: 'name', label: 'Place Name', required: true, full: true },
+      {
+        name: 'category_id',
+        label: 'Category',
+        type: 'category',
+        required: true,
+      },
+      { name: 'district', label: 'District' },
+      {
+        name: 'short_description',
+        label: 'Short Description',
+        multiline: true,
+        full: true,
+      },
+      {
+        name: 'description',
+        label: 'Full Description',
+        multiline: true,
+        rows: 3,
+        full: true,
+      },
+    ],
+  },
+  {
+    title: 'Location Details',
+    fields: [
+      { name: 'location', label: 'Address / Location', full: true },
+      { name: 'latitude', label: 'Latitude', type: 'number' },
+      { name: 'longitude', label: 'Longitude', type: 'number' },
+      { name: 'elevation_meters', label: 'Elevation (meters)', type: 'number' },
+    ],
+  },
+  {
+    title: 'Visiting Information',
+    fields: [
+      { name: 'opening_hours', label: 'Opening Hours' },
+      { name: 'entrance_fee', label: 'Entrance Fee' },
+      { name: 'travel_time', label: 'Travel Time' },
+      { name: 'visit_duration', label: 'Recommended Visit Duration' },
+      { name: 'best_time', label: 'Best Time to Visit' },
+      { name: 'contact', label: 'Contact Information' },
+      { name: 'transport_info', label: 'Transport Information', full: true },
+      {
+        name: 'mining_context',
+        label: 'Mining / Cultural Context',
+        multiline: true,
+        full: true,
+      },
+      {
+        name: 'visiting_tips',
+        label: 'Visiting Tips (one tip per line)',
+        multiline: true,
+        rows: 3,
+        full: true,
+      },
+    ],
+  },
+  {
+    title: 'Images and Rating',
+    fields: [
+      { name: 'image_url', label: 'Main Image URL', full: true },
+      { name: 'secondary_image_url', label: 'Secondary Image URL', full: true },
+      { name: 'rating', label: 'Rating (0–5)', type: 'number' },
+    ],
+  },
+];
+
+function normalizePlace(place = {}) {
+  return {
+    ...EMPTY_PLACE,
+    ...place,
+    id: place.id,
+    category_id: place.category_id ?? place.categoryId ?? '',
+    short_description: place.short_description ?? place.shortDescription ?? '',
+    opening_hours: place.opening_hours ?? place.openingHours ?? '',
+    entrance_fee: place.entrance_fee ?? place.entranceFee ?? '',
+    transport_info: place.transport_info ?? place.transportInfo ?? '',
+    travel_time: place.travel_time ?? place.travelTime ?? '',
+    visit_duration: place.visit_duration ?? place.visitDuration ?? '',
+    image_url: place.image_url ?? place.imageUrl ?? '',
+    secondary_image_url:
+      place.secondary_image_url ?? place.secondaryImageUrl ?? '',
+    best_time: place.best_time ?? place.bestTime ?? '',
+    elevation_meters: place.elevation_meters ?? place.elevationMeters ?? '',
+    mining_context: place.mining_context ?? place.miningContext ?? '',
+    visiting_tips: Array.isArray(place.visiting_tips)
+      ? place.visiting_tips.join('\n')
+      : Array.isArray(place.visitingTips)
+        ? place.visitingTips.join('\n')
+        : typeof (place.visiting_tips ?? place.visitingTips) === 'string'
+          ? (place.visiting_tips ?? place.visitingTips)
+          : '',
+    is_active:
+      place.is_active === undefined
+        ? place.isActive === undefined
+          ? true
+          : Boolean(place.isActive)
+        : Boolean(place.is_active),
+  };
+}
+
+function unwrapList(data, key) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.[key])) return data[key];
+  if (Array.isArray(data?.data)) return data.data;
+  return [];
+}
+
+function buildPayload(form) {
+  const numericFields = [
+    'category_id',
+    'latitude',
+    'longitude',
+    'rating',
+    'elevation_meters',
+  ];
+
+  const payload = { ...form };
+
+  delete payload.id;
+  delete payload.created_at;
+  delete payload.updated_at;
+  delete payload.createdAt;
+  delete payload.updatedAt;
+
+  numericFields.forEach((field) => {
+    if (payload[field] === '' || payload[field] === null) {
+      payload[field] = null;
+    } else if (payload[field] !== undefined) {
+      payload[field] = Number(payload[field]);
+    }
+  });
+
+  payload.visiting_tips = payload.visiting_tips
+    ? payload.visiting_tips
+        .split('\n')
+        .map((tip) => tip.trim())
+        .filter(Boolean)
+    : [];
+
+  payload.is_active = Boolean(payload.is_active);
+
+  return payload;
+}
+
+export default function AdminPanelView({
+  places: initialPlaces,
   onUpdatePlaces,
-  districtInfo,
-  onUpdateDistrictInfo,
-  onResetPlaces,
-  onNavigateToExplore,
-  onNavigateToMap,
-  onPreviewPlace,
-  adminUser,
-  onLogout
-}) => {
-  const theme = useTheme();
+}) {
+  const [places, setPlaces] = useState(initialPlaces || []);
+  const [categories, setCategories] = useState([]);
 
-  // Active Admin Sub-tab: 0 = Landmarks, 1 = District Settings, 2 = Backup & Import, 3 = Analytics, 4 = Security
-  const [activeTab, setActiveTab] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
-  // Password Change Modal State
-  const [changePassOpen, setChangePassOpen] = useState(false);
-  const [currentPass, setCurrentPass] = useState('');
-  const [newPass, setNewPass] = useState('');
-  const [confirmPass, setConfirmPass] = useState('');
-  const [passError, setPassError] = useState('');
-  const [passSuccess, setPassSuccess] = useState('');
-  const [passLoading, setPassLoading] = useState(false);
-
-  // Search & Filter
   const [search, setSearch] = useState('');
-  const [selectedCat, setSelectedCat] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  // Edit / Add Modal State
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingPlace, setEditingPlace] = useState(null);
-  const [formPlace, setFormPlace] = useState(EMPTY_PLACE);
-  const [tipInput, setTipInput] = useState('');
+  const [viewOpen, setViewOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  const [form, setForm] = useState(EMPTY_PLACE);
 
-  // Delete Confirmation State
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [placeToDelete, setPlaceToDelete] = useState(null);
+  const [notification, setNotification] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-  // Reset Confirmation State
-  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const getToken = () =>
+    localStorage.getItem('token') || localStorage.getItem('authToken') || '';
 
-  // Reset Credentials Confirmation State
-  const [resetCredsConfirmOpen, setResetCredsConfirmOpen] = useState(false);
+  const apiRequest = useCallback(async (endpoint, options = {}) => {
+    const token = getToken();
 
-  // Import Dialog State
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importJsonText, setImportJsonText] = useState('');
-  const [importError, setImportError] = useState('');
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
+    });
 
-  // Notification Toast
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const text = await response.text();
+    let data = {};
 
-  // District Info form state
-  const [districtForm, setDistrictForm] = useState(districtInfo || {});
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = { message: text };
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          data.error ||
+          `Request failed with status ${response.status}`,
+      );
+    }
+
+    return data;
+  }, []);
 
   const showNotification = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
+    setNotification({ open: true, message, severity });
   };
 
-  const handleUpdatePassword = async (e) => {
-    if (e) e.preventDefault();
-    setPassError('');
-    setPassSuccess('');
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
 
-    if (!currentPass) {
-      setPassError('Please enter your current password.');
-      return;
-    }
-    if (!newPass || newPass.length < 4) {
-      setPassError('New password must be at least 4 characters long.');
-      return;
-    }
-    if (newPass !== confirmPass) {
-      setPassError('New password and confirmation do not match.');
-      return;
-    }
-
-    setPassLoading(true);
     try {
-      const res = await updateAdminPassword(currentPass, newPass);
-      if (res.success) {
-        setPassSuccess('Administrator password updated successfully!');
-        setCurrentPass('');
-        setNewPass('');
-        setConfirmPass('');
-        showNotification('Password updated successfully!');
-        setTimeout(() => {
-          setChangePassOpen(false);
-          setPassSuccess('');
-        }, 1200);
-      } else {
-        setPassError(res.error || 'Failed to update password.');
+      const [placeResult, categoryResult] = await Promise.all([
+        apiRequest('/places'),
+        apiRequest('/categories'),
+      ]);
+
+      const loadedPlaces = unwrapList(placeResult, 'places').map(
+        normalizePlace,
+      );
+      const loadedCategories = unwrapList(categoryResult, 'categories');
+
+      setPlaces(loadedPlaces);
+      setCategories(loadedCategories);
+
+      if (onUpdatePlaces) {
+        onUpdatePlaces(loadedPlaces);
       }
-    } catch {
-      setPassError('An unexpected error occurred.');
-    } finally {
-      setPassLoading(false);
-    }
-  };
-
-  const handleResetAdminDefaults = () => {
-    resetAdminCredentials();
-    setResetCredsConfirmOpen(false);
-    showNotification('Admin credentials reset to defaults (admin / admin123).');
-  };
-
-  // Filtered places for table
-  const displayedPlaces = useMemo(() => {
-    return places.filter((p) => {
-      const matchCat = selectedCat === 'all' || p.category === selectedCat;
-      const matchSearch =
-        !search.trim() ||
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.id.toLowerCase().includes(search.toLowerCase()) ||
-        p.shortDescription?.toLowerCase().includes(search.toLowerCase()) ||
-        p.categoryLabel?.toLowerCase().includes(search.toLowerCase());
-      return matchCat && matchSearch;
-    });
-  }, [places, selectedCat, search]);
-
-  // Statistics calculation
-  const stats = useMemo(() => {
-    const total = places.length;
-    const catCounts = {};
-    let freeCount = 0;
-    let totalRating = 0;
-
-    places.forEach((p) => {
-      catCounts[p.category] = (catCounts[p.category] || 0) + 1;
-      if (p.entranceFee?.toLowerCase().includes('free')) {
-        freeCount++;
-      }
-      totalRating += Number(p.rating) || 0;
-    });
-
-    return {
-      total,
-      catCounts,
-      freeCount,
-      avgRating: total > 0 ? (totalRating / total).toFixed(2) : 0
-    };
-  }, [places]);
-
-  // Handle open Add Modal
-  const handleOpenAdd = () => {
-    setEditingPlace(null);
-    setFormPlace({
-      ...EMPTY_PLACE,
-      id: `site-${Date.now().toString(36)}`
-    });
-    setTipInput('');
-    setDialogOpen(true);
-  };
-
-  // Handle open Edit Modal
-  const handleOpenEdit = (place) => {
-    setEditingPlace(place);
-    setFormPlace({
-      ...place,
-      coordinates: { ...place.coordinates },
-      visitingTips: place.visitingTips ? [...place.visitingTips] : []
-    });
-    setTipInput('');
-    setDialogOpen(true);
-  };
-
-  // Handle Duplicate
-  const handleDuplicate = (place) => {
-    const newPlace = {
-      ...place,
-      id: `${place.id}-copy-${Date.now().toString(36)}`,
-      name: `${place.name} (Copy)`,
-      coordinates: { ...place.coordinates },
-      visitingTips: place.visitingTips ? [...place.visitingTips] : []
-    };
-    const updated = [newPlace, ...places];
-    onUpdatePlaces(updated);
-    showNotification(`Duplicated "${place.name}" successfully.`);
-  };
-
-  // Handle Save (Add or Update)
-  const handleSavePlace = () => {
-    if (!formPlace.name.trim()) {
-      showNotification('Place Name is required.', 'error');
-      return;
-    }
-
-    const matchedCat = CATEGORIES.find((c) => c.id === formPlace.category);
-    const finalPlace = {
-      ...formPlace,
-      categoryLabel: matchedCat ? matchedCat.label : formPlace.categoryLabel || 'Heritage',
-      coordinates: {
-        lat: Number(formPlace.coordinates.lat) || 6.6828,
-        lng: Number(formPlace.coordinates.lng) || 80.3992
-      },
-      rating: Math.min(5, Math.max(1, Number(formPlace.rating) || 4.5)),
-      elevationMeters: Number(formPlace.elevationMeters) || 100
-    };
-
-    let updated;
-    if (editingPlace) {
-      updated = places.map((p) => (p.id === editingPlace.id ? finalPlace : p));
-      showNotification(`Updated "${finalPlace.name}" successfully.`);
-    } else {
-      updated = [finalPlace, ...places];
-      showNotification(`Added "${finalPlace.name}" to directory.`);
-    }
-
-    onUpdatePlaces(updated);
-    setDialogOpen(false);
-  };
-
-  // Handle Delete
-  const handleConfirmDelete = () => {
-    if (!placeToDelete) return;
-    const updated = places.filter((p) => p.id !== placeToDelete.id);
-    onUpdatePlaces(updated);
-    showNotification(`Deleted "${placeToDelete.name}" from directory.`);
-    setDeleteConfirmOpen(false);
-    setPlaceToDelete(null);
-  };
-
-  // Handle Add Visiting Tip
-  const handleAddTip = () => {
-    if (!tipInput.trim()) return;
-    setFormPlace((prev) => ({
-      ...prev,
-      visitingTips: [...(prev.visitingTips || []), tipInput.trim()]
-    }));
-    setTipInput('');
-  };
-
-  // Handle Remove Visiting Tip
-  const handleRemoveTip = (index) => {
-    setFormPlace((prev) => ({
-      ...prev,
-      visitingTips: prev.visitingTips.filter((_, i) => i !== index)
-    }));
-  };
-
-  // Handle JSON Export
-  const handleExportJson = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(places, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `gemtrail_places_backup_${new Date().toISOString().slice(0, 10)}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-    showNotification('Exported full landmarks dataset to JSON file.');
-  };
-
-  // Handle JSON Import
-  const handleImportJson = () => {
-    try {
-      setImportError('');
-      const parsed = JSON.parse(importJsonText);
-      if (!Array.isArray(parsed)) {
-        throw new Error('Root JSON must be an array of landmark objects.');
-      }
-      if (parsed.length === 0) {
-        throw new Error('Imported array is empty.');
-      }
-      // Basic verification of first item
-      if (!parsed[0].name || !parsed[0].coordinates) {
-        throw new Error('Objects must include at least "name" and "coordinates".');
-      }
-
-      onUpdatePlaces(parsed);
-      setImportDialogOpen(false);
-      setImportJsonText('');
-      showNotification(`Successfully imported ${parsed.length} landmarks!`);
     } catch (err) {
-      setImportError(err.message || 'Invalid JSON format');
+      setError(err.message || 'Could not load places from the server.');
+    } finally {
+      setLoading(false);
+    }
+  }, [apiRequest, onUpdatePlaces]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const filteredPlaces = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return places.filter((place) => {
+      const matchesSearch =
+        !query ||
+        [
+          place.name,
+          place.location,
+          place.district,
+          place.short_description,
+        ].some((value) =>
+          String(value || '')
+            .toLowerCase()
+            .includes(query),
+        );
+
+      const matchesCategory =
+        categoryFilter === 'all' ||
+        String(place.category_id) === String(categoryFilter);
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && place.is_active) ||
+        (statusFilter === 'inactive' && !place.is_active);
+
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
+  }, [places, search, categoryFilter, statusFilter]);
+
+  const paginatedPlaces = filteredPlaces.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage,
+  );
+
+  const getCategoryName = (categoryId) => {
+    const category = categories.find(
+      (item) => String(item.id) === String(categoryId),
+    );
+
+    return category?.name || 'Uncategorized';
+  };
+
+  const openAddDialog = () => {
+    setEditingId(null);
+    setForm({ ...EMPTY_PLACE });
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (place) => {
+    setEditingId(place.id);
+    setForm(normalizePlace(place));
+    setDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    if (saving) return;
+    setDialogOpen(false);
+    setEditingId(null);
+    setForm({ ...EMPTY_PLACE });
+  };
+
+  const handleFieldChange = (event) => {
+    const { name, value, checked, type } = event.target;
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+
+    if (!form.name.trim()) {
+      setError('Place name is required.');
+      return;
+    }
+
+    if (!form.category_id) {
+      setError('Please select a category.');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const payload = buildPayload(form);
+
+      if (editingId !== null && editingId !== undefined) {
+        await apiRequest(`/places/${editingId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(payload),
+        });
+
+        showNotification('Place updated successfully.');
+      } else {
+        await apiRequest('/places', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+
+        showNotification('Place added successfully.');
+      }
+
+      setDialogOpen(false);
+      setEditingId(null);
+      setForm({ ...EMPTY_PLACE });
+
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to save place.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Handle Reset to Default 44 Places
-  const handleResetDefaults = () => {
-    onResetPlaces();
-    setResetConfirmOpen(false);
-    showNotification('Database successfully reset to original 44 verified sites.');
+  const handleDelete = async (place) => {
+    const confirmed = window.confirm(
+      `Delete "${place.name}"? This action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    setError('');
+
+    try {
+      await apiRequest(`/places/${place.id}`, {
+        method: 'DELETE',
+      });
+
+      showNotification('Place deleted successfully.');
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to delete place.');
+    }
   };
 
-  // Handle Save District Settings
-  const handleSaveDistrictSettings = () => {
-    if (onUpdateDistrictInfo) {
-      onUpdateDistrictInfo(districtForm);
-      showNotification('District metadata saved successfully.');
+  const openViewDialog = (place) => {
+    setSelectedPlace(place);
+    setViewOpen(true);
+  };
+
+  const renderField = (field) => {
+    if (field.type === 'category') {
+      return (
+        <FormControl fullWidth required size="small">
+          <InputLabel>{field.label}</InputLabel>
+          <Select
+            name={field.name}
+            label={field.label}
+            value={form[field.name] ?? ''}
+            onChange={handleFieldChange}
+          >
+            {categories.map((category) => (
+              <MenuItem key={category.id} value={category.id}>
+                {category.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      );
     }
+
+    return (
+      <TextField
+        fullWidth
+        size="small"
+        name={field.name}
+        label={field.label}
+        value={form[field.name] ?? ''}
+        onChange={handleFieldChange}
+        required={Boolean(field.required)}
+        type={field.type || 'text'}
+        multiline={Boolean(field.multiline)}
+        rows={field.rows || (field.multiline ? 2 : undefined)}
+        inputProps={
+          field.type === 'number'
+            ? {
+                ...(field.name === 'rating'
+                  ? { min: 0, max: 5, step: 0.1 }
+                  : {}),
+              }
+            : undefined
+        }
+      />
+    );
   };
 
   return (
-    <div className="max-w-360 mx-auto w-full px-3 sm:px-6 lg:px-10 py-6">
-      
-      {/* 1. Header & Navigation Bar */}
-      <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
+    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1500, mx: 'auto' }}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        spacing={2}
+        sx={{ mb: 3 }}
+      >
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.75 }}>
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: '10px',
-                bgcolor: 'primary.main',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(45, 106, 79, 0.3)'
-              }}
-            >
-              <DashboardIcon sx={{ fontSize: 20 }} />
-            </Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontFamily: '"Literata", Georgia, serif',
-                fontWeight: 800,
-                color: 'text.primary',
-                fontSize: { xs: '1.5rem', sm: '1.85rem' }
-              }}
-            >
-              GemTrail Admin Control Panel
-            </Typography>
-            <Chip
-              label="Live Database Mode"
-              color="success"
-              size="small"
-              sx={{ fontWeight: 700, fontSize: '0.72rem' }}
-            />
-          </Box>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Maintain, edit, and curate all landmarks, GPS coordinates, entrance fees, and geological context across Sabaragamuwa.
+          <Typography variant="h4" fontWeight={800}>
+            Manage Tourist Places
+          </Typography>
+          <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+            Add, update, and manage places stored in your database.
           </Typography>
         </Box>
 
-        {/* Quick Links & Admin Session Controls */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-          {/* Admin User Chip */}
-          <Chip
-            icon={<PersonIcon fontSize="small" />}
-            label={adminUser?.name || 'Administrator'}
-            color="default"
-            variant="outlined"
-            size="medium"
-            sx={{
-              fontWeight: 700,
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
-              border: `1px solid ${theme.palette.divider}`
-            }}
-          />
-
+        <Stack direction="row" spacing={1}>
           <Button
             variant="outlined"
-            size="small"
-            startIcon={<KeyIcon />}
-            onClick={() => setChangePassOpen(true)}
-            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '10px' }}
+            startIcon={<RefreshIcon />}
+            onClick={loadData}
+            disabled={loading}
           >
-            Password
+            Refresh
           </Button>
-
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<ArrowBackIcon />}
-            onClick={onNavigateToExplore}
-            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '10px' }}
-          >
-            Back to Explore
-          </Button>
-
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<PlaceIcon />}
-            onClick={onNavigateToMap}
-            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '10px' }}
-          >
-            Map
-          </Button>
-
           <Button
             variant="contained"
-            color="primary"
             startIcon={<AddIcon />}
-            onClick={handleOpenAdd}
-            sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '10px', px: 2 }}
+            onClick={openAddDialog}
           >
-            Add Landmark
+            Add Place
           </Button>
+        </Stack>
+      </Stack>
 
-          {onLogout && (
-            <Tooltip title="Log out from Admin Console">
-              <Button
-                variant="outlined"
-                color="error"
-                size="small"
-                startIcon={<LogoutIcon />}
-                onClick={onLogout}
-                sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '10px' }}
-              >
-                Logout
-              </Button>
-            </Tooltip>
-          )}
-        </Box>
-      </Box>
+      {error && (
+        <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-      {/* 2. Top Analytics Metrics Strip */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 2, mb: 4 }}>
-        <Card
-          elevation={0}
-          sx={{
-            p: 2,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-            border: `1px solid ${theme.palette.divider}`,
-            borderRadius: '12px'
-          }}
-        >
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
-            Total Landmarks Indexed
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main' }}>
-              {stats.total}
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Sites in Ratnapura
-            </Typography>
-          </Box>
-        </Card>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography color="text.secondary" variant="body2">
+                Total Places
+              </Typography>
+              <Typography variant="h4" fontWeight={800}>
+                {places.length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
 
-        <Card
-          elevation={0}
-          sx={{
-            p: 2,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-            border: `1px solid ${theme.palette.divider}`,
-            borderRadius: '12px'
-          }}
-        >
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
-            Average Visitor Rating
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: 'warning.main' }}>
-              ★ {stats.avgRating}
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              out of 5.0
-            </Typography>
-          </Box>
-        </Card>
+        <Grid item xs={12} sm={4}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography color="text.secondary" variant="body2">
+                Active Places
+              </Typography>
+              <Typography variant="h4" fontWeight={800} color="success.main">
+                {places.filter((place) => place.is_active).length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
 
-        <Card
-          elevation={0}
-          sx={{
-            p: 2,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-            border: `1px solid ${theme.palette.divider}`,
-            borderRadius: '12px'
-          }}
-        >
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
-            Free Public Admission
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: 'info.main' }}>
-              {stats.freeCount}
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Free entry sanctuaries
-            </Typography>
-          </Box>
-        </Card>
+        <Grid item xs={12} sm={4}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography color="text.secondary" variant="body2">
+                Categories
+              </Typography>
+              <Typography variant="h4" fontWeight={800}>
+                {categories.length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-        <Card
-          elevation={0}
-          sx={{
-            p: 2,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-            border: `1px solid ${theme.palette.divider}`,
-            borderRadius: '12px'
-          }}
-        >
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
-            Persistent Storage State
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: 'success.main' }}>
-              Local Database
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Auto-synced
-            </Typography>
-          </Box>
-        </Card>
-      </Box>
+      <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={5}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Search places, districts, locations..."
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(0);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
 
-      {/* 3. Main Admin Navigation Tabs */}
-      <Card
-        elevation={0}
-        sx={{
-          mb: 3,
-          bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-          border: `1px solid ${theme.palette.divider}`,
-          borderRadius: '12px'
-        }}
-      >
-        <Tabs
-          value={activeTab}
-          onChange={(_, val) => setActiveTab(val)}
-          textColor="primary"
-          indicatorColor="primary"
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            px: 2,
-            borderBottom: `1px solid ${theme.palette.divider}`,
-            '& .MuiTab-root': {
-              textTransform: 'none',
-              fontWeight: 700,
-              fontSize: '0.875rem',
-              minHeight: 48
-            }
-          }}
-        >
-          <Tab icon={<PlaceIcon fontSize="small" />} iconPosition="start" label={`Landmarks Directory (${places.length})`} />
-          <Tab icon={<SettingsIcon fontSize="small" />} iconPosition="start" label="District Settings & Info" />
-          <Tab icon={<StorageIcon fontSize="small" />} iconPosition="start" label="Backup, Export & Import" />
-          <Tab icon={<DashboardIcon fontSize="small" />} iconPosition="start" label="Category Distribution" />
-          <Tab icon={<SecurityIcon fontSize="small" />} iconPosition="start" label="Security & Admin Account" />
-        </Tabs>
-      </Card>
-
-      {/* TAB 0: Landmarks Management */}
-      {activeTab === 0 && (
-        <Card
-          elevation={0}
-          sx={{
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-            border: `1px solid ${theme.palette.divider}`,
-            borderRadius: '12px',
-            overflow: 'hidden'
-          }}
-        >
-          {/* Controls Bar: Search & Category Filter */}
-          <Box sx={{ p: 2.5, borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' }, flex: 1, flexWrap: 'wrap' }}>
-              <TextField
-                size="small"
-                placeholder="Search landmarks by name, ID or description..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                sx={{ minWidth: { xs: '100%', sm: 300 }, flex: 1 }}
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                      </InputAdornment>
-                    ),
-                    endAdornment: search ? (
-                      <InputAdornment position="end">
-                        <IconButton size="small" onClick={() => setSearch('')}>
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    ) : null,
-                    sx: { borderRadius: '10px' }
-                  }
+          <Grid item xs={12} sm={6} md={3.5}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Category</InputLabel>
+              <Select
+                value={categoryFilter}
+                label="Category"
+                onChange={(event) => {
+                  setCategoryFilter(event.target.value);
+                  setPage(0);
                 }}
-              />
+              >
+                <MenuItem value="all">All Categories</MenuItem>
+                {categories.map((category) => (
+                  <MenuItem key={category.id} value={String(category.id)}>
+                    {category.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
 
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel>Category Filter</InputLabel>
-                <Select
-                  value={selectedCat}
-                  label="Category Filter"
-                  onChange={(e) => setSelectedCat(e.target.value)}
-                  sx={{ borderRadius: '10px' }}
-                >
-                  <MenuItem value="all">All Categories ({places.length})</MenuItem>
-                  {CATEGORIES.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.label} ({stats.catCounts[c.id] || 0})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
+          <Grid item xs={12} sm={6} md={3.5}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(event) => {
+                  setStatusFilter(event.target.value);
+                  setPage(0);
+                }}
+              >
+                <MenuItem value="all">All Statuses</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Paper>
 
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-              Showing {displayedPlaces.length} of {places.length} places
+      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+        {loading ? (
+          <Box
+            sx={{
+              minHeight: 250,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column',
+              gap: 2,
+            }}
+          >
+            <CircularProgress />
+            <Typography color="text.secondary">
+              Loading places from the database...
             </Typography>
           </Box>
-
-          {/* Table */}
-          <TableContainer sx={{ maxHeight: 650 }}>
-            <Table stickyHeader size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 800, width: 80 }}>Image</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Landmark Name & ID</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Category</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>GPS Coordinates</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Admission</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Rating</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800, pr: 3 }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {displayedPlaces.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                      No landmarks matching your search criteria.
-                    </TableCell>
+        ) : (
+          <>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: 'action.hover' }}>
+                    <TableCell>Place</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell>District</TableCell>
+                    <TableCell>Rating</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
-                ) : (
-                  displayedPlaces.map((place) => (
-                    <TableRow
-                      key={place.id}
-                      hover
-                      sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                    >
-                      {/* Image Thumbnail */}
+                </TableHead>
+
+                <TableBody>
+                  {paginatedPlaces.map((place) => (
+                    <TableRow key={place.id} hover>
                       <TableCell>
-                        <Box
-                          component="img"
-                          src={place.image}
-                          alt={place.name}
-                          sx={{
-                            width: 52,
-                            height: 40,
-                            borderRadius: '6px',
-                            objectFit: 'cover',
-                            border: `1px solid ${theme.palette.divider}`
-                          }}
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&w=300&q=80';
-                          }}
-                        />
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
+                        >
+                          {place.image_url ? (
+                            <Box
+                              component="img"
+                              src={place.image_url}
+                              alt={place.name}
+                              sx={{
+                                width: 54,
+                                height: 48,
+                                objectFit: 'cover',
+                                borderRadius: 1,
+                                bgcolor: 'action.hover',
+                              }}
+                              onError={(event) => {
+                                event.currentTarget.style.visibility = 'hidden';
+                              }}
+                            />
+                          ) : (
+                            <Box
+                              sx={{
+                                width: 54,
+                                height: 48,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 1,
+                                bgcolor: 'action.hover',
+                              }}
+                            >
+                              <PlaceIcon color="action" />
+                            </Box>
+                          )}
+
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography fontWeight={700}>
+                              {place.name}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{
+                                maxWidth: 280,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {place.short_description ||
+                                place.location ||
+                                'No description'}
+                            </Typography>
+                          </Box>
+                        </Stack>
                       </TableCell>
 
-                      {/* Name & ID */}
                       <TableCell>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                          {place.name}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', fontFamily: 'monospace' }}>
-                          id: {place.id}
-                        </Typography>
+                        {getCategoryName(place.category_id)}
                       </TableCell>
 
-                      {/* Category */}
+                      <TableCell>{place.district || '—'}</TableCell>
+
+                      <TableCell>
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          alignItems="center"
+                        >
+                          <StarIcon
+                            fontSize="small"
+                            sx={{ color: 'warning.main' }}
+                          />
+                          {place.rating ?? '—'}
+                        </Stack>
+                      </TableCell>
+
                       <TableCell>
                         <Chip
-                          label={place.categoryLabel || place.category}
                           size="small"
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: '0.72rem',
-                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'
-                          }}
+                          label={place.is_active ? 'Active' : 'Inactive'}
+                          color={place.is_active ? 'success' : 'default'}
+                          variant={place.is_active ? 'filled' : 'outlined'}
                         />
                       </TableCell>
 
-                      {/* Coordinates */}
-                      <TableCell>
-                        <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary', display: 'block' }}>
-                          {place.coordinates?.lat?.toFixed(4)}° N
-                        </Typography>
-                        <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary', display: 'block' }}>
-                          {place.coordinates?.lng?.toFixed(4)}° E
-                        </Typography>
-                      </TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="View details">
+                          <IconButton
+                            color="info"
+                            onClick={() => openViewDialog(place)}
+                            size="small"
+                          >
+                            <ViewIcon />
+                          </IconButton>
+                        </Tooltip>
 
-                      {/* Admission */}
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
-                          {place.entranceFee || 'Free Entry'}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                          {place.elevationMeters ? `${place.elevationMeters}m elev` : ''}
-                        </Typography>
-                      </TableCell>
+                        <Tooltip title="Edit place">
+                          <IconButton
+                            color="primary"
+                            onClick={() => openEditDialog(place)}
+                            size="small"
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
 
-                      {/* Rating */}
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: 'warning.main' }}>
-                            ★ {place.rating}
+                        <Tooltip title="Delete place">
+                          <IconButton
+                            color="error"
+                            onClick={() => handleDelete(place)}
+                            size="small"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                  {paginatedPlaces.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6}>
+                        <Box sx={{ py: 6, textAlign: 'center' }}>
+                          <PlaceIcon
+                            sx={{ fontSize: 42, color: 'text.disabled', mb: 1 }}
+                          />
+                          <Typography fontWeight={700}>
+                            No places found
+                          </Typography>
+                          <Typography color="text.secondary" variant="body2">
+                            Try changing your search or add a new place.
                           </Typography>
                         </Box>
                       </TableCell>
-
-                      {/* Action Buttons */}
-                      <TableCell align="right" sx={{ pr: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
-                          {onPreviewPlace && (
-                            <Tooltip title="Preview Details">
-                              <IconButton size="small" onClick={() => onPreviewPlace(place)} color="info">
-                                <ViewIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          <Tooltip title="Edit Landmark">
-                            <IconButton size="small" onClick={() => handleOpenEdit(place)} color="primary">
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Duplicate">
-                            <IconButton size="small" onClick={() => handleDuplicate(place)}>
-                              <DuplicateIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                setPlaceToDelete(place);
-                                setDeleteConfirmOpen(true);
-                              }}
-                              color="error"
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Card>
-      )}
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-      {/* TAB 1: District Settings & Info */}
-      {activeTab === 1 && (
-        <Card
-          elevation={0}
-          sx={{
-            p: { xs: 2.5, sm: 4 },
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-            border: `1px solid ${theme.palette.divider}`,
-            borderRadius: '12px'
-          }}
-        >
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              District Metadata & Authority Configuration
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              These parameters drive header statistics, the cartographic center point, and regional heritage summaries.
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-            <TextField
-              label="District Name"
-              value={districtForm.name || ''}
-              onChange={(e) => setDistrictForm({ ...districtForm, name: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Province & Country"
-              value={districtForm.province || ''}
-              onChange={(e) => setDistrictForm({ ...districtForm, province: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Administrative Capital"
-              value={districtForm.capital || ''}
-              onChange={(e) => setDistrictForm({ ...districtForm, capital: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Area Coverage"
-              value={districtForm.areaKm2 || ''}
-              onChange={(e) => setDistrictForm({ ...districtForm, areaKm2: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Elevation Range"
-              value={districtForm.elevationRange || ''}
-              onChange={(e) => setDistrictForm({ ...districtForm, elevationRange: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Climate Summary"
-              value={districtForm.climate || ''}
-              onChange={(e) => setDistrictForm({ ...districtForm, climate: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Gem Varieties Documented"
-              type="number"
-              value={districtForm.gemVarietiesCount || 75}
-              onChange={(e) => setDistrictForm({ ...districtForm, gemVarietiesCount: Number(e.target.value) })}
-              fullWidth
-            />
-            <TextField
-              label="Center Latitude (°N)"
-              type="number"
-              value={districtForm.coordinates?.lat || 6.6828}
-              onChange={(e) => setDistrictForm({
-                ...districtForm,
-                coordinates: { ...districtForm.coordinates, lat: Number(e.target.value) }
-              })}
-              fullWidth
-            />
-            <TextField
-              label="Center Longitude (°E)"
-              type="number"
-              value={districtForm.coordinates?.lng || 80.3992}
-              onChange={(e) => setDistrictForm({
-                ...districtForm,
-                coordinates: { ...districtForm.coordinates, lng: Number(e.target.value) }
-              })}
-              fullWidth
-            />
-            <TextField
-              label="Gem Mining History Note"
-              value={districtForm.gemMiningHistory || ''}
-              onChange={(e) => setDistrictForm({ ...districtForm, gemMiningHistory: e.target.value })}
-              fullWidth
-              multiline
-              rows={2}
-            />
-          </Box>
-
-          <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={() => setDistrictForm(districtInfo)}
-              sx={{ textTransform: 'none' }}
-            >
-              Reset to Current
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSaveDistrictSettings}
-              sx={{ textTransform: 'none', fontWeight: 700, px: 3 }}
-            >
-              Save District Settings
-            </Button>
-          </Box>
-        </Card>
-      )}
-
-      {/* TAB 2: Backup, Export & Import */}
-      {activeTab === 2 && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-          {/* Card 1: JSON Export & Download */}
-          <Card
-            elevation={0}
-            sx={{
-              p: 3,
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: '12px'
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <ExportIcon color="primary" />
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                Export Landmarks Dataset
-              </Typography>
-            </Box>
-            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-              Download a complete JSON snapshot containing all {places.length} active landmarks with their GPS coordinates, rich historical narratives, visitor advisories, and images.
-            </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<ExportIcon />}
-              onClick={handleExportJson}
-              sx={{ textTransform: 'none', fontWeight: 700 }}
-            >
-              Download places.json ({places.length} Items)
-            </Button>
-          </Card>
-
-          {/* Card 2: JSON Import */}
-          <Card
-            elevation={0}
-            sx={{
-              p: 3,
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: '12px'
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <ImportIcon color="secondary" />
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                Import Landmarks Dataset
-              </Typography>
-            </Box>
-            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-              Paste or upload a valid JSON array of landmark objects to batch-update or replace the directory dataset.
-            </Typography>
-            <Button
-              variant="outlined"
-              color="secondary"
-              startIcon={<ImportIcon />}
-              onClick={() => {
-                setImportJsonText('');
-                setImportError('');
-                setImportDialogOpen(true);
+            <TablePagination
+              component="div"
+              count={filteredPlaces.length}
+              page={page}
+              onPageChange={(_, nextPage) => setPage(nextPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(event) => {
+                setRowsPerPage(Number(event.target.value));
+                setPage(0);
               }}
-              sx={{ textTransform: 'none', fontWeight: 700 }}
+              rowsPerPageOptions={[5, 10, 25, 50]}
+            />
+          </>
+        )}
+      </Paper>
+
+      {/* Add / Edit Place Dialog */}
+      <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="md">
+        <Box component="form" onSubmit={handleSave}>
+          <DialogTitle>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
             >
-              Open JSON Import Modal
-            </Button>
-          </Card>
-
-          {/* Card 3: Factory Reset */}
-          <Card
-            elevation={0}
-            sx={{
-              p: 3,
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: '12px',
-              gridColumn: { md: 'span 2' }
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-              <ResetIcon color="error" />
-              <Typography variant="h6" sx={{ fontWeight: 800, color: 'error.main' }}>
-                Reset to Original 44 Verified Landmarks
+              <Typography variant="h6" fontWeight={800}>
+                {editingId !== null
+                  ? 'Edit Tourist Place'
+                  : 'Add Tourist Place'}
               </Typography>
-            </Box>
-            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2.5 }}>
-              Restore the pristine factory seed of all 44 canonical Sabaragamuwa landmarks (Bopath Ella, Delgamuwa, Batatota Lena, Maha Saman Devalaya, Sinharaja, etc.) if custom modifications need to be cleared.
-            </Typography>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<ResetIcon />}
-              onClick={() => setResetConfirmOpen(true)}
-              sx={{ textTransform: 'none', fontWeight: 700 }}
-            >
-              Reset to Factory Database
-            </Button>
-          </Card>
-        </Box>
-      )}
+              <IconButton onClick={closeDialog} disabled={saving}>
+                <CloseIcon />
+              </IconButton>
+            </Stack>
+          </DialogTitle>
 
-      {/* TAB 3: Category Distribution Analytics */}
-      {activeTab === 3 && (
-        <Card
-          elevation={0}
-          sx={{
-            p: 3.5,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-            border: `1px solid ${theme.palette.divider}`,
-            borderRadius: '12px'
-          }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
-            Category Portfolio Breakdown
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-            Distribution of documented attractions across the thematic gems of Sabaragamuwa.
-          </Typography>
+          <Divider />
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2.5 }}>
-            {CATEGORIES.map((cat) => {
-              const count = stats.catCounts[cat.id] || 0;
-              const percentage = stats.total > 0 ? ((count / stats.total) * 100).toFixed(1) : 0;
-              return (
-                <Box
-                  key={cat.id}
-                  sx={{
-                    p: 2.5,
-                    borderRadius: '10px',
-                    border: `1px solid ${theme.palette.divider}`,
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.4)' : 'rgba(250, 246, 240, 0.8)'
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {cat.icon}
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                        {cat.label}
-                      </Typography>
-                    </Box>
-                    <Chip label={`${count} Sites`} size="small" color="primary" sx={{ fontWeight: 700 }} />
-                  </Box>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Represents {percentage}% of indexed attractions
-                  </Typography>
-                </Box>
-              );
-            })}
-          </Box>
-        </Card>
-      )}
-
-      {/* TAB 4: Admin Security & Account */}
-      {activeTab === 4 && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-          {/* Card 1: Administrator Profile */}
-          <Card
-            elevation={0}
-            sx={{
-              p: 3,
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: '12px'
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <ShieldIcon color="primary" />
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                Administrator Account
-              </Typography>
-            </Box>
-            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2.5 }}>
-              Active authenticated session details and privileges for the Sabaragamuwa GIS database.
-            </Typography>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75, borderBottom: `1px solid ${theme.palette.divider}` }}>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>Account Role:</Typography>
-                <Chip label={adminUser?.role || 'Super Administrator'} size="small" color="success" sx={{ fontWeight: 700 }} />
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75, borderBottom: `1px solid ${theme.palette.divider}` }}>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>Admin Name:</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>{adminUser?.name || 'District Administrator'}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75, borderBottom: `1px solid ${theme.palette.divider}` }}>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>Username / Identifier:</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>{adminUser?.username || 'admin'}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75, borderBottom: `1px solid ${theme.palette.divider}` }}>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>Official Email:</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>{adminUser?.email || 'admin@gemtrail.lk'}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75, borderBottom: `1px solid ${theme.palette.divider}` }}>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>Department:</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{adminUser?.department || 'Sabaragamuwa Tourism Bureau'}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75 }}>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>Session Security:</Typography>
-                <Chip icon={<CheckCircleIcon fontSize="small" />} label="SHA-256 Token Active" size="small" variant="outlined" color="primary" />
-              </Box>
-            </Box>
-
-            {onLogout && (
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<LogoutIcon />}
-                onClick={onLogout}
-                sx={{ textTransform: 'none', fontWeight: 700 }}
-              >
-                Log Out of Current Session
-              </Button>
-            )}
-          </Card>
-
-          {/* Card 2: Password Management */}
-          <Card
-            elevation={0}
-            sx={{
-              p: 3,
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: '12px'
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <KeyIcon color="secondary" />
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                Change Administrator Password
-              </Typography>
-            </Box>
-            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2.5 }}>
-              Update your administrative master password. Changes persist in your secured browser storage.
-            </Typography>
-
-            {passError && (
-              <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setPassError('')}>
-                {passError}
+          <DialogContent>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
               </Alert>
             )}
 
-            {passSuccess && (
-              <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
-                {passSuccess}
-              </Alert>
-            )}
+            {FIELD_GROUPS.map((group) => (
+              <Box key={group.title} sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2 }}>
+                  {group.title}
+                </Typography>
 
-            <form onSubmit={handleUpdatePassword}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <TextField
-                  label="Current Password"
-                  type="password"
-                  value={currentPass}
-                  onChange={(e) => setCurrentPass(e.target.value)}
-                  fullWidth
-                  size="small"
-                  required
-                />
-                <TextField
-                  label="New Password (min 4 characters)"
-                  type="password"
-                  value={newPass}
-                  onChange={(e) => setNewPass(e.target.value)}
-                  fullWidth
-                  size="small"
-                  required
-                />
-                <TextField
-                  label="Confirm New Password"
-                  type="password"
-                  value={confirmPass}
-                  onChange={(e) => setConfirmPass(e.target.value)}
-                  fullWidth
-                  size="small"
-                  required
-                />
-
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  disabled={passLoading}
-                  startIcon={<KeyIcon />}
-                  sx={{ textTransform: 'none', fontWeight: 700, mt: 1 }}
-                >
-                  {passLoading ? 'Updating Password...' : 'Save New Password'}
-                </Button>
+                <Grid container spacing={2}>
+                  {group.fields.map((field) => (
+                    <Grid
+                      item
+                      xs={12}
+                      sm={field.full ? 12 : 6}
+                      key={field.name}
+                    >
+                      {renderField(field)}
+                    </Grid>
+                  ))}
+                </Grid>
               </Box>
-            </form>
-          </Card>
+            ))}
 
-          {/* Card 3: Credential Reset & Factory Restore */}
-          <Card
-            elevation={0}
-            sx={{
-              p: 3,
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.5)' : '#ffffff',
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: '12px',
-              gridColumn: { md: 'span 2' }
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-              <LockResetIcon color="warning" />
-              <Typography variant="h6" sx={{ fontWeight: 800, color: 'warning.main' }}>
-                Reset Admin Credentials to Factory Defaults
-              </Typography>
-            </Box>
-            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2.5 }}>
-              If you forget your updated password, you can restore default credentials (`admin` / `admin123`).
-            </Typography>
-            <Button
-              variant="outlined"
-              color="warning"
-              startIcon={<LockResetIcon />}
-              onClick={() => setResetCredsConfirmOpen(true)}
-              sx={{ textTransform: 'none', fontWeight: 700 }}
-            >
-              Reset Credentials to Default
+            <Divider sx={{ my: 2 }} />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  name="is_active"
+                  checked={Boolean(form.is_active)}
+                  onChange={handleFieldChange}
+                />
+              }
+              label="Place is active and visible to users"
+            />
+          </DialogContent>
+
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={closeDialog} disabled={saving}>
+              Cancel
             </Button>
-          </Card>
-        </Box>
-      )}
 
-      {/* ========================================================================= */}
-      {/* DIALOG: ADD / EDIT LANDMARK                                               */}
-      {/* ========================================================================= */}
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={saving}
+              startIcon={
+                saving ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : (
+                  <AddIcon />
+                )
+              }
+            >
+              {saving
+                ? 'Saving...'
+                : editingId !== null
+                  ? 'Save Changes'
+                  : 'Add Place'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+
+      {/* Place Details Dialog */}
       <Dialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        maxWidth="md"
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
         fullWidth
-        PaperProps={{
-          sx: { borderRadius: '16px', maxHeight: '90vh' }
-        }}
+        maxWidth="sm"
       >
-        <DialogTitle sx={{ fontWeight: 800, fontFamily: '"Literata", Georgia, serif', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{editingPlace ? `Edit Landmark: ${editingPlace.name}` : 'Add New Sabaragamuwa Landmark'}</span>
-          <IconButton size="small" onClick={() => setDialogOpen(false)}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
+        <DialogTitle>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            Place Details
+            <IconButton onClick={() => setViewOpen(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
         </DialogTitle>
 
-        <DialogContent dividers sx={{ p: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            
-            {/* Row 1: ID & Name */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '2fr 1fr' }, gap: 2 }}>
-              <TextField
-                label="Landmark Name *"
-                value={formPlace.name}
-                onChange={(e) => setFormPlace({ ...formPlace, name: e.target.value })}
-                required
-                fullWidth
-              />
-              <TextField
-                label="Unique Slug / ID *"
-                value={formPlace.id}
-                onChange={(e) => setFormPlace({ ...formPlace, id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
-                required
-                fullWidth
-                helperText="URL-friendly identifier"
-              />
-            </Box>
-
-            {/* Row 2: Category, Entrance Fee, Rating */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={formPlace.category}
-                  label="Category"
-                  onChange={(e) => {
-                    const catObj = CATEGORIES.find((c) => c.id === e.target.value);
-                    setFormPlace({
-                      ...formPlace,
-                      category: e.target.value,
-                      categoryLabel: catObj ? catObj.label : formPlace.categoryLabel
-                    });
-                  }}
-                >
-                  {CATEGORIES.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>{c.label}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <TextField
-                label="Entrance Fee"
-                value={formPlace.entranceFee}
-                onChange={(e) => setFormPlace({ ...formPlace, entranceFee: e.target.value })}
-                placeholder="e.g. Free Entry or LKR 100"
-                fullWidth
-              />
-
-              <TextField
-                label="Visitor Rating (1.0 - 5.0)"
-                type="number"
-                inputProps={{ step: 0.1, min: 1, max: 5 }}
-                value={formPlace.rating}
-                onChange={(e) => setFormPlace({ ...formPlace, rating: Number(e.target.value) })}
-                fullWidth
-              />
-            </Box>
-
-            {/* Row 3: GPS Coordinates & Quick Presets */}
-            <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)', borderRadius: '10px', border: `1px solid ${theme.palette.divider}` }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LocationIcon color="primary" fontSize="small" />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    GPS Cartography Coordinates
-                  </Typography>
-                </Box>
-
-                {/* Preset Dropdown */}
-                <FormControl size="small" sx={{ minWidth: 200 }}>
-                  <InputLabel>Select Regional Preset</InputLabel>
-                  <Select
-                    label="Select Regional Preset"
-                    value=""
-                    onChange={(e) => {
-                      const found = PRESET_COORDINATES.find((p) => p.label === e.target.value);
-                      if (found) {
-                        setFormPlace({
-                          ...formPlace,
-                          coordinates: { lat: found.lat, lng: found.lng }
-                        });
-                      }
-                    }}
-                  >
-                    {PRESET_COORDINATES.map((p) => (
-                      <MenuItem key={p.label} value={p.label}>{p.label}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
-                <TextField
-                  label="Latitude (°N)"
-                  type="number"
-                  inputProps={{ step: 0.0001 }}
-                  value={formPlace.coordinates.lat}
-                  onChange={(e) => setFormPlace({
-                    ...formPlace,
-                    coordinates: { ...formPlace.coordinates, lat: Number(e.target.value) }
-                  })}
-                  fullWidth
-                />
-                <TextField
-                  label="Longitude (°E)"
-                  type="number"
-                  inputProps={{ step: 0.0001 }}
-                  value={formPlace.coordinates.lng}
-                  onChange={(e) => setFormPlace({
-                    ...formPlace,
-                    coordinates: { ...formPlace.coordinates, lng: Number(e.target.value) }
-                  })}
-                  fullWidth
-                />
-                <TextField
-                  label="Elevation (meters)"
-                  type="number"
-                  value={formPlace.elevationMeters || 100}
-                  onChange={(e) => setFormPlace({ ...formPlace, elevationMeters: Number(e.target.value) })}
-                  fullWidth
-                />
-              </Box>
-            </Box>
-
-            {/* Row 4: Descriptions */}
-            <TextField
-              label="Short Description (Card Summary) *"
-              value={formPlace.shortDescription}
-              onChange={(e) => setFormPlace({ ...formPlace, shortDescription: e.target.value })}
-              multiline
-              rows={2}
-              fullWidth
-              helperText="Brief summary shown on landmark cards and search results"
-            />
-
-            <TextField
-              label="Detailed Historical & Ecological Chronicle"
-              value={formPlace.detailedDescription}
-              onChange={(e) => setFormPlace({ ...formPlace, detailedDescription: e.target.value })}
-              multiline
-              rows={4}
-              fullWidth
-              helperText="In-depth narrative shown on the expanded detail modal"
-            />
-
-            {/* Row 5: Mining Context & Timings */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-              <TextField
-                label="Geological / Gem Mining Context"
-                value={formPlace.miningContext || ''}
-                onChange={(e) => setFormPlace({ ...formPlace, miningContext: e.target.value })}
-                fullWidth
-                helperText="Alluvial gravels, corundum types, river panning context"
-              />
-
-              <TextField
-                label="Opening Hours / Status"
-                value={formPlace.openStatus || ''}
-                onChange={(e) => setFormPlace({ ...formPlace, openStatus: e.target.value })}
-                placeholder="• Open Now • 7:00 AM – 6:00 PM"
-                fullWidth
-              />
-            </Box>
-
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-              <TextField
-                label="Best Visiting Time"
-                value={formPlace.bestTime || ''}
-                onChange={(e) => setFormPlace({ ...formPlace, bestTime: e.target.value })}
-                placeholder="Morning (8:00 AM – 11:30 AM)"
-                fullWidth
-              />
-
-              <TextField
-                label="Official Contact Information"
-                value={formPlace.contact || ''}
-                onChange={(e) => setFormPlace({ ...formPlace, contact: e.target.value })}
-                placeholder="+94 45 222 3411 (Custodian Office)"
-                fullWidth
-              />
-            </Box>
-
-            {/* Row 6: Image URLs */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-              <TextField
-                label="Primary Image URL"
-                value={formPlace.image}
-                onChange={(e) => setFormPlace({ ...formPlace, image: e.target.value })}
-                fullWidth
-              />
-
-              <TextField
-                label="Secondary Gallery Image URL"
-                value={formPlace.secondaryImage || ''}
-                onChange={(e) => setFormPlace({ ...formPlace, secondaryImage: e.target.value })}
-                fullWidth
-              />
-            </Box>
-
-            {/* Image Preview */}
-            {formPlace.image && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <DialogContent dividers>
+          {selectedPlace && (
+            <Stack spacing={1.5}>
+              {selectedPlace.image_url && (
                 <Box
                   component="img"
-                  src={formPlace.image}
-                  alt="Primary Preview"
-                  sx={{ width: 100, height: 60, borderRadius: '8px', objectFit: 'cover' }}
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  src={selectedPlace.image_url}
+                  alt={selectedPlace.name}
+                  sx={{
+                    width: '100%',
+                    maxHeight: 260,
+                    objectFit: 'cover',
+                    borderRadius: 2,
+                  }}
                 />
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Live Image Preview Check
-                </Typography>
-              </Box>
-            )}
+              )}
 
-            {/* Row 7: Visiting Tips Array */}
-            <Box sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)', borderRadius: '10px', border: `1px solid ${theme.palette.divider}` }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                Visitor Advisories & Practical Tips ({formPlace.visitingTips?.length || 0})
+              <Typography variant="h5" fontWeight={800}>
+                {selectedPlace.name}
               </Typography>
-              
-              <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
-                <TextField
+
+              <Typography color="text.secondary">
+                {getCategoryName(selectedPlace.category_id)} ·{' '}
+                {selectedPlace.district || 'No district'}
+              </Typography>
+
+              <Divider />
+
+              {[
+                ['Short Description', selectedPlace.short_description],
+                ['Description', selectedPlace.description],
+                ['Location', selectedPlace.location],
+                [
+                  'Coordinates',
+                  [selectedPlace.latitude, selectedPlace.longitude]
+                    .filter((v) => v !== '' && v != null)
+                    .join(', '),
+                ],
+                ['Opening Hours', selectedPlace.opening_hours],
+                ['Entrance Fee', selectedPlace.entrance_fee],
+                ['Transport', selectedPlace.transport_info],
+                ['Travel Time', selectedPlace.travel_time],
+                ['Visit Duration', selectedPlace.visit_duration],
+                ['Best Time to Visit', selectedPlace.best_time],
+                ['Contact', selectedPlace.contact],
+                ['Elevation', selectedPlace.elevation_meters],
+                ['Mining / Cultural Context', selectedPlace.mining_context],
+                [
+                  'Visiting Tips',
+                  Array.isArray(selectedPlace.visiting_tips)
+                    ? selectedPlace.visiting_tips.join(', ')
+                    : selectedPlace.visiting_tips,
+                ],
+              ].map(([label, value]) =>
+                value !== '' && value != null ? (
+                  <Box key={label}>
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      {label}
+                    </Typography>
+                    <Typography sx={{ whiteSpace: 'pre-wrap' }}>
+                      {String(value)}
+                    </Typography>
+                  </Box>
+                ) : null,
+              )}
+
+              <Box>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Rating
+                </Typography>
+                <Typography>{selectedPlace.rating ?? 'Not rated'}</Typography>
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Status
+                </Typography>
+                <Chip
                   size="small"
-                  placeholder="Enter tip (e.g. Best light for photography is early morning)"
-                  value={tipInput}
-                  onChange={(e) => setTipInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTip(); } }}
-                  fullWidth
+                  label={selectedPlace.is_active ? 'Active' : 'Inactive'}
+                  color={selectedPlace.is_active ? 'success' : 'default'}
                 />
-                <Button variant="outlined" onClick={handleAddTip} sx={{ textTransform: 'none', px: 2 }}>
-                  Add Tip
-                </Button>
               </Box>
-
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {formPlace.visitingTips?.map((tip, idx) => (
-                  <Chip
-                    key={idx}
-                    label={tip}
-                    onDelete={() => handleRemoveTip(idx)}
-                    size="small"
-                    sx={{ maxWidth: '100%' }}
-                  />
-                ))}
-              </Box>
-            </Box>
-
-          </Box>
-        </DialogContent>
-
-        <DialogActions sx={{ p: 2.5, px: 3 }}>
-          <Button onClick={() => setDialogOpen(false)} sx={{ textTransform: 'none' }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSavePlace}
-            sx={{ textTransform: 'none', fontWeight: 700, px: 3 }}
-          >
-            {editingPlace ? 'Save Changes' : 'Create Landmark'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ========================================================================= */}
-      {/* DIALOG: DELETE CONFIRMATION                                               */}
-      {/* ========================================================================= */}
-      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800 }}>Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Are you sure you want to permanently delete <strong>{placeToDelete?.name}</strong> from the database?
-            This will immediately remove it from Explore, Map, and the Trip Planner.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setDeleteConfirmOpen(false)} sx={{ textTransform: 'none' }}>
-            Cancel
-          </Button>
-          <Button variant="contained" color="error" onClick={handleConfirmDelete} sx={{ textTransform: 'none', fontWeight: 700 }}>
-            Yes, Delete Landmark
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ========================================================================= */}
-      {/* DIALOG: RESET FACTORY CONFIRMATION                                        */}
-      {/* ========================================================================= */}
-      <Dialog open={resetConfirmOpen} onClose={() => setResetConfirmOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, color: 'error.main' }}>Reset Database to Factory Defaults?</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            This will clear any custom landmarks added or edited in this browser and restore the official 44 verified landmarks of the Ratnapura Gem Belt.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setResetConfirmOpen(false)} sx={{ textTransform: 'none' }}>
-            Cancel
-          </Button>
-          <Button variant="contained" color="error" onClick={handleResetDefaults} sx={{ textTransform: 'none', fontWeight: 700 }}>
-            Confirm Reset
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ========================================================================= */}
-      {/* DIALOG: JSON IMPORT                                                       */}
-      {/* ========================================================================= */}
-      <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Import Landmarks (JSON Array)</span>
-          <IconButton size="small" onClick={() => setImportDialogOpen(false)}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          {importError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {importError}
-            </Alert>
+            </Stack>
           )}
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
-            Paste raw JSON array of landmarks below:
-          </Typography>
-          <TextField
-            multiline
-            rows={12}
-            fullWidth
-            value={importJsonText}
-            onChange={(e) => setImportJsonText(e.target.value)}
-            placeholder={`[\n  {\n    "id": "bopath-ella",\n    "name": "Bopath Ella Waterfall",\n    "category": "waterfalls",\n    "coordinates": { "lat": 6.7925, "lng": 80.3702 },\n    "rating": 4.8\n  }\n]`}
-            slotProps={{
-              input: {
-                sx: { fontFamily: 'monospace', fontSize: '0.8rem' }
-              }
-            }}
-          />
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setImportDialogOpen(false)} sx={{ textTransform: 'none' }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleImportJson}
-            disabled={!importJsonText.trim()}
-            sx={{ textTransform: 'none', fontWeight: 700 }}
-          >
-            Import JSON Data
-          </Button>
+
+        <DialogActions>
+          <Button onClick={() => setViewOpen(false)}>Close</Button>
+          {selectedPlace && (
+            <Button
+              variant="contained"
+              startIcon={<EditIcon />}
+              onClick={() => {
+                setViewOpen(false);
+                openEditDialog(selectedPlace);
+              }}
+            >
+              Edit Place
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 
-      {/* ========================================================================= */}
-      {/* DIALOG: CHANGE ADMIN PASSWORD                                             */}
-      {/* ========================================================================= */}
-      <Dialog
-        open={changePassOpen}
-        onClose={() => setChangePassOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: '16px' } }}
-      >
-        <DialogTitle sx={{ fontWeight: 800, fontFamily: '"Literata", Georgia, serif', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Change Admin Password</span>
-          <IconButton size="small" onClick={() => setChangePassOpen(false)}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          {passError && (
-            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setPassError('')}>
-              {passError}
-            </Alert>
-          )}
-          {passSuccess && (
-            <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
-              {passSuccess}
-            </Alert>
-          )}
-
-          <Box component="form" onSubmit={handleUpdatePassword} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <TextField
-              label="Current Password"
-              type="password"
-              value={currentPass}
-              onChange={(e) => setCurrentPass(e.target.value)}
-              fullWidth
-              autoFocus
-              required
-            />
-            <TextField
-              label="New Password"
-              type="password"
-              value={newPass}
-              onChange={(e) => setNewPass(e.target.value)}
-              fullWidth
-              required
-              helperText="Minimum 4 characters"
-            />
-            <TextField
-              label="Confirm New Password"
-              type="password"
-              value={confirmPass}
-              onChange={(e) => setConfirmPass(e.target.value)}
-              fullWidth
-              required
-            />
-            <DialogActions sx={{ px: 0, pb: 0 }}>
-              <Button onClick={() => setChangePassOpen(false)} sx={{ textTransform: 'none' }}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                disabled={passLoading}
-                sx={{ textTransform: 'none', fontWeight: 700 }}
-              >
-                {passLoading ? 'Updating...' : 'Update Password'}
-              </Button>
-            </DialogActions>
-          </Box>
-        </DialogContent>
-      </Dialog>
-
-      {/* ========================================================================= */}
-      {/* DIALOG: CONFIRM RESET ADMIN CREDENTIALS                                   */}
-      {/* ========================================================================= */}
-      <Dialog
-        open={resetCredsConfirmOpen}
-        onClose={() => setResetCredsConfirmOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: '16px' } }}
-      >
-        <DialogTitle sx={{ fontWeight: 800, color: 'warning.main' }}>
-          Reset Admin Credentials?
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-            This will restore the factory master credentials:
-          </Typography>
-          <Box sx={{ p: 1.5, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)', borderRadius: '8px' }}>
-            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 700 }}>
-              Username: admin<br />
-              Password: admin123 (or admin)
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setResetCredsConfirmOpen(false)} sx={{ textTransform: 'none' }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="warning"
-            onClick={handleResetAdminDefaults}
-            sx={{ textTransform: 'none', fontWeight: 700 }}
-          >
-            Confirm Reset
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar Toast */}
       <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        open={notification.open}
+        autoHideDuration={3500}
+        onClose={() =>
+          setNotification((previous) => ({ ...previous, open: false }))
+        }
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
         <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
+          severity={notification.severity}
           variant="filled"
-          sx={{ width: '100%', fontWeight: 600, borderRadius: '10px' }}
+          onClose={() =>
+            setNotification((previous) => ({ ...previous, open: false }))
+          }
         >
-          {snackbar.message}
+          {notification.message}
         </Alert>
       </Snackbar>
-
-    </div>
+    </Box>
   );
-};
+}

@@ -98,3 +98,41 @@ exports.me = async (req, res) => {
     return res.status(404).json({ success: false, message: 'User not found.' });
   res.json({ success: true, data: rows[0] });
 };
+
+
+//change password
+exports.changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (
+    typeof currentPassword !== 'string' ||
+    typeof newPassword !== 'string' ||
+    newPassword.length < 3 ||
+    newPassword.length > 128
+  )
+    return res.status(400).json({
+      success: false,
+      message: 'Current and new passwords are required. New password must be 3–128 characters.',
+    });
+
+  const [rows] = await db.execute(
+    'SELECT password_hash FROM users WHERE id = ?',
+    [req.user.id],
+  );
+  if (!rows.length)
+    return res.status(404).json({ success: false, message: 'User not found.' });
+
+  const user = rows[0];
+  if (!(await bcrypt.compare(currentPassword, user.password_hash)))
+    return res.status(401).json({ success: false, message: 'Current password is incorrect.' });
+
+  const newHash = await bcrypt.hash(
+    newPassword,
+    Number(process.env.BCRYPT_ROUNDS || 12),
+  );
+  await db.execute('UPDATE users SET password_hash = ? WHERE id = ?', [
+    newHash,
+    req.user.id,
+  ]);
+
+  res.json({ success: true, message: 'Password changed successfully.' });
+};
