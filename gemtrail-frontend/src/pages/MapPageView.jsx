@@ -7,9 +7,9 @@ import {
   LocationOff as LocationOffIcon,
   MyLocation as MyLocationIcon
 } from '@mui/icons-material';
-import { LocationControls } from './LocationControls.jsx';
-import { FilterBar } from './FilterBar.jsx';
-import { PlacesMap } from './PlacesMap.jsx';
+import { LocationControls } from '../components/LocationControls.jsx';
+import { FilterBar } from '../components/FilterBar.jsx';
+import { PlacesMap } from '../components/PlacesMap.jsx';
 
 export const MapPageView = ({
   places,

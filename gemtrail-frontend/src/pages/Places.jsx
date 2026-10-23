@@ -1,8 +1,9 @@
 import React, { useRef } from 'react';
-import { DistrictStatusHeader } from './DistrictStatusHeader.jsx';
-import { LocationControls } from './LocationControls.jsx';
-import { FilterBar } from './FilterBar.jsx';
-import { PlacesGrid } from './PlacesGrid.jsx';
+import { DistrictStatusHeader } from '../components/DistrictStatusHeader';
+import { LocationControls } from '../components/LocationControls';
+import { FilterBar } from '../components/FilterBar';
+import { PlacesGrid } from '../components/PlacesGrid';
+
 
 export const Places = ({
   places,

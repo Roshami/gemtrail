@@ -35,6 +35,8 @@ import {
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const AUTH_URL = `${API_BASE_URL}/api/auth`;
 
+const isEmailValid = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 export const LoginView = ({
   onLoginSuccess,
   onBackToExplore,
@@ -68,7 +70,9 @@ export const LoginView = ({
   const saveSession = (token, user) => {
     // Never trust a role supplied by the form; use the role returned by the API.
     const storage = rememberMe ? window.localStorage : window.sessionStorage;
-    const otherStorage = rememberMe ? window.sessionStorage : window.localStorage;
+    const otherStorage = rememberMe
+      ? window.sessionStorage
+      : window.localStorage;
     otherStorage.removeItem('token');
     otherStorage.removeItem('user');
     storage.setItem('token', token);
@@ -84,8 +88,8 @@ export const LoginView = ({
         setErrorMsg('Name must be 2–120 characters.');
         return;
       }
-      if (password.length < 8 || password.length > 128) {
-        setErrorMsg('Password must be 8–128 characters.');
+      if (password.length < 3 || password.length > 128) {
+        setErrorMsg('Password must be 3–128 characters.');
         return;
       }
       if (password !== confirmPassword) {
@@ -115,12 +119,17 @@ export const LoginView = ({
 
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.success) {
-        setErrorMsg(result.message || 'The request could not be completed. Please try again.');
+        setErrorMsg(
+          result.message ||
+            'The request could not be completed. Please try again.',
+        );
         return;
       }
 
       if (mode === 'register') {
-        setSuccessMsg('Your visitor account has been created. You can now sign in.');
+        setSuccessMsg(
+          'Your visitor account has been created. You can now sign in.',
+        );
         setMode('login');
         setPassword('');
         setConfirmPassword('');
@@ -136,7 +145,9 @@ export const LoginView = ({
       // Only a server-authenticated admin may trigger the admin-dashboard callback.
       if (user.role === 'admin') {
         saveSession(token, user);
-        setSuccessMsg(`Welcome, ${user.name || 'Administrator'}! Opening the admin console...`);
+        setSuccessMsg(
+          `Welcome, ${user.name || 'Administrator'}! Opening the admin console...`,
+        );
         window.setTimeout(() => {
           onLoginSuccess?.(user);
         }, 400);
@@ -145,7 +156,9 @@ export const LoginView = ({
 
       if (user.role === 'visitor') {
         saveSession(token, user);
-        setSuccessMsg(`Welcome, ${user.name || 'visitor'}! You are signed in as a visitor.`);
+        setSuccessMsg(
+          `Welcome, ${user.name || 'visitor'}! You are signed in as a visitor.`,
+        );
         window.setTimeout(() => {
           onUserLoginSuccess?.(user);
           onBackToExplore?.();
@@ -154,7 +167,9 @@ export const LoginView = ({
       }
 
       // Fail closed for unknown or missing roles.
-      setErrorMsg('This account does not have permission to access the application.');
+      setErrorMsg(
+        'This account does not have permission to access the application.',
+      );
     } catch (error) {
       setErrorMsg(
         'Unable to connect to the server. Check that the backend is running and the API URL is correct.',
@@ -230,7 +245,8 @@ export const LoginView = ({
           <Box
             sx={{
               height: 6,
-              background: 'linear-gradient(90deg, #059669 0%, #10b981 50%, #34d399 100%)',
+              background:
+                'linear-gradient(90deg, #059669 0%, #10b981 50%, #34d399 100%)',
             }}
           />
 
@@ -261,19 +277,27 @@ export const LoginView = ({
                   <AdminIcon sx={{ fontSize: 34 }} />
                 )}
               </Box>
-              <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 0.5 }}>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 0.5 }}
+              >
                 {isRegister ? 'Create Your Account' : 'Sign In'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 GemTrail Ratnapura Tourism Portal
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Visitors can explore and plan trips. Only administrators can access the admin console.
+                Visitors can explore and plan trips. Only administrators can
+                access the admin console.
               </Typography>
             </Box>
 
             {errorMsg && (
-              <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setErrorMsg('')}>
+              <Alert
+                severity="error"
+                sx={{ mb: 3, borderRadius: 2 }}
+                onClose={() => setErrorMsg('')}
+              >
                 {errorMsg}
               </Alert>
             )}
@@ -319,13 +343,19 @@ export const LoginView = ({
                     onChange={(event) => setName(event.target.value)}
                     disabled={loading}
                     required
-                    inputProps={{ minLength: 2, maxLength: 120 }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon color="action" fontSize="small" />
-                        </InputAdornment>
-                      ),
+                    slotProps={{
+                      htmlInput: {
+                        minLength: 2,
+                        maxLength: 120,
+                      },
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockIcon color="action" fontSize="small" />
+                          </InputAdornment>
+                        ),
+                        e
+                      },
                     }}
                   />
                 )}
@@ -341,12 +371,26 @@ export const LoginView = ({
                   placeholder="you@example.com"
                   disabled={loading}
                   required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <EmailIcon color="action" fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockIcon color="action" fontSize="small" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setEmail('')}
+                            edge="end"
+                            size="small"
+                            aria-label="clear email"
+                          >
+                            <EmailIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                 />
 
@@ -354,35 +398,46 @@ export const LoginView = ({
                   label="Password"
                   type={showPassword ? 'text' : 'password'}
                   fullWidth
-                  autoComplete={isRegister ? 'new-password' : 'current-password'}
+                  autoComplete={
+                    isRegister ? 'new-password' : 'current-password'
+                  }
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  placeholder={isRegister ? 'At least 8 characters' : 'Enter your password'}
+                  placeholder={
+                    isRegister ? 'At least 8 characters' : 'Enter your password'
+                  }
                   disabled={loading}
                   required
-                  inputProps={isRegister ? { minLength: 8, maxLength: 128 } : {}}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockIcon color="action" fontSize="small" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPassword((visible) => !visible)}
-                          edge="end"
-                          size="small"
-                          aria-label="toggle password visibility"
-                        >
-                          {showPassword ? (
-                            <VisibilityOffIcon fontSize="small" />
-                          ) : (
-                            <VisibilityIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    htmlInput: {
+                      minLength: 3,
+                      maxLength: 128,
+                    },
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockIcon color="action" fontSize="small" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() =>
+                              setShowPassword((visible) => !visible)
+                            }
+                            edge="end"
+                            size="small"
+                            aria-label="toggle password visibility"
+                          >
+                            {showPassword ? (
+                              <VisibilityOffIcon fontSize="small" />
+                            ) : (
+                              <VisibilityIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                 />
 
@@ -396,13 +451,35 @@ export const LoginView = ({
                     onChange={(event) => setConfirmPassword(event.target.value)}
                     disabled={loading}
                     required
-                    inputProps={{ minLength: 8, maxLength: 128 }}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockIcon color="action" fontSize="small" />
-                        </InputAdornment>
-                      ),
+                    slotProps={{
+                      htmlInput: isRegister
+                        ? { minLength: 3, maxLength: 128 }
+                        : {},
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockIcon color="action" fontSize="small" />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() =>
+                                setShowPassword((visible) => !visible)
+                              }
+                              edge="end"
+                              size="small"
+                              aria-label="toggle password visibility"
+                            >
+                              {showPassword ? (
+                                <VisibilityOffIcon fontSize="small" />
+                              ) : (
+                                <VisibilityIcon fontSize="small" />
+                              )}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      },
                     }}
                   />
                 )}
@@ -413,7 +490,9 @@ export const LoginView = ({
                       <Checkbox
                         size="small"
                         checked={rememberMe}
-                        onChange={(event) => setRememberMe(event.target.checked)}
+                        onChange={(event) =>
+                          setRememberMe(event.target.checked)
+                        }
                         color="primary"
                       />
                     }
@@ -460,9 +539,13 @@ export const LoginView = ({
 
             <Divider sx={{ my: 3 }} />
 
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center' }}>
-              New accounts are registered as visitors. Administrator access is granted only to
-              accounts assigned the admin role by the server.
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', textAlign: 'center' }}
+            >
+              New accounts are registered as visitors. Administrator access is
+              granted only to accounts assigned the admin role by the server.
             </Typography>
           </CardContent>
         </Card>
