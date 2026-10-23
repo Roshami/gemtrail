@@ -1,8 +1,9 @@
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const AUTH_URL = `${API_BASE_URL}/api`;
 
 async function request(endpoint, options = {}, token) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${AUTH_URL}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

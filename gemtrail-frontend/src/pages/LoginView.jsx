@@ -32,8 +32,8 @@ import {
 
 // Set VITE_API_URL in your frontend .env if the API is hosted on another origin.
 // Example: VITE_API_URL=http://localhost:5000
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-const AUTH_URL = `${API_BASE_URL}/auth`;
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+const AUTH_URL = `${API_BASE_URL}/api/auth`;
 
 const isEmailValid = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
