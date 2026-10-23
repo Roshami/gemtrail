@@ -486,10 +486,10 @@ export const PlacesMap = ({
   const currentSelected = activePlace;
 
   return (
-    <div className="bg-[#f5f1ea] rounded-[12px] p-3 md:p-5 shadow-lg border border-[#c4c8bc]/40 relative overflow-hidden mb-8">
+    <div className="bg-[#f5f1ea] rounded-xl p-3 md:p-5 shadow-lg border border-[#c4c8bc]/40 relative overflow-hidden mb-8">
       
       {/* Map Header Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5 mb-3 bg-[#f0ece4] rounded-[12px] border border-[#c4c8bc]/30">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5 mb-3 bg-[#f0ece4] rounded-xl border border-[#c4c8bc]/30">
         <div className="flex items-center gap-3">
           <span className="relative flex h-3 w-3 shrink-0">
             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isGpsLive ? 'bg-blue-500' : 'bg-[#4a7c59]'} opacity-75`}></span>
@@ -513,7 +513,7 @@ export const PlacesMap = ({
           <div className="inline-flex items-center bg-[#eae6de] rounded-lg p-0.5 text-[11px] font-semibold text-[#4a4e4a] shadow-inner">
             <button
               onClick={() => onRadarModeChange && onRadarModeChange('radar')}
-              className={`min-h-[44px] px-3 py-2 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`min-h-11 px-3 py-2 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
                 radarMode === 'radar'
                   ? 'bg-blue-600 text-white shadow-sm font-bold'
                   : 'hover:text-[#2e3230]'
@@ -525,7 +525,7 @@ export const PlacesMap = ({
 
             <button
               onClick={() => onRadarModeChange && onRadarModeChange('all')}
-              className={`min-h-[44px] px-3 py-2 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`min-h-11 px-3 py-2 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
                 radarMode === 'all'
                   ? 'bg-[#4a7c59] text-white shadow-sm font-bold'
                   : 'hover:text-[#2e3230]'
@@ -540,7 +540,7 @@ export const PlacesMap = ({
           <div className="inline-flex items-center bg-[#eae6de] rounded-lg p-0.5 text-[11px] font-semibold text-[#4a4e4a] shadow-inner">
             <button
               onClick={() => setMapLayer('terrain')}
-              className={`min-h-[44px] px-2.5 py-2 rounded-md flex items-center gap-1 transition-all cursor-pointer ${
+              className={`min-h-11 px-2.5 py-2 rounded-md flex items-center gap-1 transition-all cursor-pointer ${
                 mapLayer === 'terrain'
                   ? 'bg-white text-[#4a7c59] shadow-sm font-bold'
                   : 'hover:text-[#2e3230]'
@@ -552,7 +552,7 @@ export const PlacesMap = ({
 
             <button
               onClick={() => setMapLayer('streets')}
-              className={`min-h-[44px] px-2.5 py-2 rounded-md transition-all cursor-pointer ${
+              className={`min-h-11 px-2.5 py-2 rounded-md transition-all cursor-pointer ${
                 mapLayer === 'streets'
                   ? 'bg-white text-[#4a7c59] shadow-sm font-bold'
                   : 'hover:text-[#2e3230]'
@@ -563,7 +563,7 @@ export const PlacesMap = ({
 
             <button
               onClick={() => setMapLayer('satellite')}
-              className={`min-h-[44px] px-2.5 py-2 rounded-md transition-all cursor-pointer ${
+              className={`min-h-11 px-2.5 py-2 rounded-md transition-all cursor-pointer ${
                 mapLayer === 'satellite'
                   ? 'bg-white text-[#4a7c59] shadow-sm font-bold'
                   : 'hover:text-[#2e3230]'
@@ -575,7 +575,7 @@ export const PlacesMap = ({
 
           <button
             onClick={toggleFullscreen}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-[#eae6de] text-[#4a4e4a] hover:text-[#4a7c59] hover:bg-white transition-colors shadow-sm cursor-pointer"
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-lg bg-[#eae6de] text-[#4a4e4a] hover:text-[#4a7c59] hover:bg-white transition-colors shadow-sm cursor-pointer"
             title="Toggle Fullscreen"
             aria-label="Toggle Fullscreen"
           >
@@ -586,13 +586,13 @@ export const PlacesMap = ({
 
       {/* Pick on Map Banner Overlay */}
       {isPickingOnMap && (
-        <div className="absolute top-20 left-4 right-4 z-[1000] bg-[#2e3230]/95 backdrop-blur text-[#f5f0e8] px-4 py-3 rounded-xl text-xs shadow-xl flex items-center justify-between border border-white/10">
+        <div className="absolute top-20 left-4 right-4 z-1000 bg-[#2e3230]/95 backdrop-blur text-[#f5f0e8] px-4 py-3 rounded-xl text-xs shadow-xl flex items-center justify-between border border-white/10">
           <span className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#8ecf9e] animate-bounce" />
             <span>Touch or click anywhere on the map to set your custom center coordinates.</span>
           </span>
           <button
-            className="min-h-[44px] px-3 flex items-center text-[#8ecf9e] font-bold text-xs underline cursor-pointer"
+            className="min-h-11 px-3 flex items-center text-[#8ecf9e] font-bold text-xs underline cursor-pointer"
             onClick={onPickOnMapToggle}
           >
             Done
@@ -634,7 +634,7 @@ export const PlacesMap = ({
         {/* North Arrow Compass */}
         <button 
           onClick={() => mapInstanceRef.current?.setView([center.lat, center.lng], 10)}
-          className="absolute top-28 left-3 z-[900] bg-white/95 backdrop-blur rounded-xl shadow-md border border-[#c4c8bc]/40 flex items-center justify-center w-11 h-11 text-[#4a7c59] cursor-pointer hover:bg-[#f0ece4] transition-colors" 
+          className="absolute top-28 left-3 z-900 bg-white/95 backdrop-blur rounded-xl shadow-md border border-[#c4c8bc]/40 flex items-center justify-center w-11 h-11 text-[#4a7c59] cursor-pointer hover:bg-[#f0ece4] transition-colors" 
           title="Reset to center point"
           aria-label="Reset to center point"
         >
@@ -655,10 +655,10 @@ export const PlacesMap = ({
         </button>
 
         {/* Floating Quick Pick Location Banner (Top-Right) */}
-        <div className="absolute top-3 right-3 z-[900]">
+        <div className="absolute top-3 right-3 z-900">
           <button
             onClick={onPickOnMapToggle}
-            className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md cursor-pointer ${
+            className={`min-h-11 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md cursor-pointer ${
               isPickingOnMap
                 ? 'bg-[#705c30] text-white ring-2 ring-white animate-pulse'
                 : 'bg-white/95 backdrop-blur border border-[#c4c8bc]/40 text-[#4a4e4a] hover:text-[#4a7c59]'
@@ -672,7 +672,7 @@ export const PlacesMap = ({
         </div>
 
         {/* Category Legend Bar (Bottom-Left) */}
-        <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg shadow-md border border-[#c4c8bc]/30 text-[10px] text-[#4a4e4a] flex items-center gap-2.5 z-[900] flex-wrap">
+        <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg shadow-md border border-[#c4c8bc]/30 text-[10px] text-[#4a4e4a] flex items-center gap-2.5 z-900 flex-wrap">
           <div className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#0284c7]"></span>
             <span>Waterfalls</span>
@@ -705,9 +705,9 @@ export const PlacesMap = ({
 
       {/* Selected Place Popover Footer - Only appears when a place is actively touched/selected */}
       {currentSelected && (
-        <div className="mt-3 bg-[#f0ece4] p-3 rounded-[12px] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border border-[#c4c8bc]/40 animate-fadeIn">
+        <div className="mt-3 bg-[#f0ece4] p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border border-[#c4c8bc]/40 animate-fadeIn">
           <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-[12px] bg-[#eae6de] overflow-hidden shrink-0 shadow-sm border border-[#c4c8bc]/30">
+            <div className="w-14 h-14 rounded-xl bg-[#eae6de] overflow-hidden shrink-0 shadow-sm border border-[#c4c8bc]/30">
               <img
                 src={currentSelected.image}
                 alt={currentSelected.name}
@@ -738,7 +738,7 @@ export const PlacesMap = ({
           <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
             <button
               onClick={() => onTogglePlan(currentSelected)}
-              className={`min-h-[44px] px-3.5 py-2 rounded-[12px] text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer ${
+              className={`min-h-11 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer ${
                 plannedIds.includes(currentSelected.id)
                   ? 'bg-[#2e683e] text-white'
                   : 'bg-[#4a7c59] hover:bg-[#3b6548] text-white'
@@ -759,7 +759,7 @@ export const PlacesMap = ({
 
             <button
               onClick={() => onOpenDetails(currentSelected)}
-              className="min-h-[44px] px-3 rounded-[12px] bg-[#e4e0d8] text-[#2e3230] hover:text-[#4a7c59] transition-colors flex items-center justify-center gap-1 text-xs font-semibold cursor-pointer"
+              className="min-h-11 px-3 rounded-xl bg-[#e4e0d8] text-[#2e3230] hover:text-[#4a7c59] transition-colors flex items-center justify-center gap-1 text-xs font-semibold cursor-pointer"
               title="View full place story"
             >
               <Eye className="w-4 h-4" />
@@ -769,7 +769,7 @@ export const PlacesMap = ({
             {/* Dismiss touch card button */}
             <button
               onClick={() => onSelectPlace?.(null)}
-              className="min-h-[44px] min-w-[44px] rounded-[12px] bg-[#e4e0d8] text-[#74796e] hover:text-[#2e3230] transition-colors flex items-center justify-center cursor-pointer"
+              className="min-h-11 min-w-11 rounded-xl bg-[#e4e0d8] text-[#74796e] hover:text-[#2e3230] transition-colors flex items-center justify-center cursor-pointer"
               title="Close card"
               aria-label="Close card"
             >
