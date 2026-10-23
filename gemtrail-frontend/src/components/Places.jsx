@@ -1,9 +1,8 @@
 import React, { useRef } from 'react';
-import { DistrictStatusHeader } from '../components/DistrictStatusHeader';
-import { LocationControls } from '../components/LocationControls';
-import { FilterBar } from '../components/FilterBar';
-import { PlacesGrid } from '../components/PlacesGrid';
-
+import { DistrictStatusHeader } from './DistrictStatusHeader';
+import { LocationControls } from './LocationControls';
+import { FilterBar } from './FilterBar';
+import { PlacesGrid } from './PlacesGrid';
 
 export const Places = ({
   places,
@@ -38,14 +37,14 @@ export const Places = ({
   onRetryGps,
   placesWithin25Count,
   userLocation,
-  onOpenMapPage
+  onOpenMapPage,
 }) => {
   const gridRef = useRef(null);
 
   return (
     <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-12">
       {/* 1. District Header & Live 25km Status Banner */}
-      <DistrictStatusHeader 
+      <DistrictStatusHeader
         userLocation={userLocation || center}
         isGpsLive={isGpsLive}
         geoError={geoError}
