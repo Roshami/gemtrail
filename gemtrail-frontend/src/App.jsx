@@ -10,7 +10,7 @@ import { Places } from './components/Places.jsx';
 import { PlaceDetailModal } from './components/PlaceDetailModal.jsx';
 import { DirectionsModal } from './components/DirectionsModal.jsx';
 
-import { TripPlannerView } from './pages/TripPlannerView.jsx';
+import AllItineraryPlans from './pages/AllItineraryPlans.jsx';
 import { GemTrailsView } from './pages/GemTrailsView.jsx';
 import { StoriesGuidesView } from './pages/StoriesGuidesView.jsx';
 import { AboutSabaragamuwaView } from './pages/AboutSabaragamuwaView.jsx';
@@ -1020,22 +1020,22 @@ export default function App() {
 
           {/* Trip planner */}
           {activeTab === 'planner' && (
-            <TripPlannerView
-              plannedPlaces={plannedPlaces}
-              onRemoveFromPlan={(id) => {
-                setPlannedIds((previous) =>
-                  previous.filter((placeId) => placeId !== id),
-                );
-              }}
-              onClearPlan={() => setPlannedIds([])}
-              onAddRecommended={() =>
-                setPlannedIds([
-                  'bopath-ella',
-                  'kahawatte-mines',
-                  'saman-devalaya',
-                  'national-gem-museum',
-                ])
-              }
+            <AllItineraryPlans
+              places={places}
+              plannedIds={plannedIds}
+              setPlannedIds={setPlannedIds}
+              onSelectPlace={setActivePlace}
+              onOpenDetails={setDetailModalPlace}
+              onOpenDirections={setDirectionsModalPlace}
+            />
+          )}
+
+          {activeTab === 'trip-planner' && (
+            <AllItineraryPlans
+              places={places}
+              plannedIds={plannedIds}
+              setPlannedIds={setPlannedIds}
+              onSelectPlace={setActivePlace}
               onOpenDetails={setDetailModalPlace}
               onOpenDirections={setDirectionsModalPlace}
             />
