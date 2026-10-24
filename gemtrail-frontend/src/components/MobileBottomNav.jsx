@@ -17,7 +17,7 @@ import {
   Explore as ExploreIcon,
   Radar as RadarIcon,
   Map as MapIcon,
-  Bookmark as BookmarkIcon,
+  Timeline as TimelineIcon,
   MoreHoriz as MoreHorizIcon,
   Diamond as DiamondIcon,
   MenuBook as MenuBookIcon,
@@ -235,19 +235,8 @@ export const MobileBottomNav = ({
             minWidth: 44,
           }}
         >
-          <Badge
-            badgeContent={planCount}
-            color="primary"
-            sx={{
-              '& .MuiBadge-badge': {
-                fontSize: '0.6rem',
-                height: 16,
-                minWidth: 16,
-              },
-            }}
-          >
-            <BookmarkIcon sx={{ fontSize: 22 }} />
-          </Badge>
+          <TimelineIcon sx={{ fontSize: 22 }} />
+
           <Typography
             component="span"
             sx={{
@@ -471,9 +460,7 @@ export const MobileBottomNav = ({
               <ListItemText
                 primary={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>
-                      {isAdminLoggedIn ? 'Admin' : 'Login'}
-                    </span>
+                    <span>{isAdminLoggedIn ? 'Admin' : 'Login'}</span>
                     {isAdminLoggedIn && (
                       <Chip
                         label="Active"
