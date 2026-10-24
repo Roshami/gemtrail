@@ -16,14 +16,29 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 const app = express();
 app.disable('x-powered-by');
 app.use(helmet());
+
+const allowedOrigins = (
+  process.env.CLIENT_ORIGIN || 'http://localhost:3000'
+)
+  .split(',')
+  .map((s) => s.trim());
+
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN
-      ? process.env.CLIENT_ORIGIN.split(',').map((s) => s.trim())
-      : true,
-    credentials: false,
+    origin: function (origin, callback) {
+      // Allow requests without an Origin header (e.g. server-to-server)
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Origin not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use(

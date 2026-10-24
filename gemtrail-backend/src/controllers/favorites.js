@@ -23,6 +23,7 @@ exports.add = async (req, res) => {
   );
   res.status(201).json({ success: true, message: 'Place added to favorites.' });
 };
+
 exports.remove = async (req, res) => {
   const id = validateId(req.params.placeId, 'placeId');
   const [r] = await db.execute(
