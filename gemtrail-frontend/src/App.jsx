@@ -32,6 +32,7 @@ import {
   saveStoredDistrictInfo,
 } from './utils/placesStorage.js';
 import UserProfileView from './pages/UserProfileView.jsx';
+import BookmarkPage from './pages/BookmarkPage.jsx';
 
 // ------------------------------------------------------
 // API CONFIGURATION
@@ -1046,6 +1047,9 @@ export default function App() {
 
           {/* About Sabaragamuwa */}
           {activeTab === 'about' && <AboutSabaragamuwaView />}
+
+          {/* Bookmarks / favorited places */}
+          {activeTab === 'bookmarks' && <BookmarkPage />}
 
           {/* User profile */}
           {activeTab === 'profile' && (

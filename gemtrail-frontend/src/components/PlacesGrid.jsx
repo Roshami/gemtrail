@@ -248,9 +248,13 @@ export const PlacesGrid = ({
           method: 'DELETE',
         });
 
-        setFavoriteIds((previous) => previous.filter((id) => id !== placeId));
+        setFavoriteIds((previous) =>
+          previous.includes(placeId) ? previous : [...previous, placeId],
+        );
 
-        showToast(`"${place.name || 'Place'}" removed from favorites.`);
+        window.dispatchEvent(new Event('favoritesUpdated'));
+
+        showToast(`"${place.name || 'Place'}" added to favorites.`);
       } else {
         await request(`/favorites/${encodeURIComponent(placeId)}`, {
           method: 'POST',

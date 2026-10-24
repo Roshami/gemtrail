@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -52,7 +52,6 @@ import {
 export const Header = ({
   activeTab,
   onTabChange,
-  planCount = 0,
   themeMode = 'light',
   onToggleTheme,
   isAdminLoggedIn = false,
@@ -74,7 +73,94 @@ export const Header = ({
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState('');
   const [passwordError, setPasswordError] = useState(false);
-  
+
+  const [favoriteCount, setFavoriteCount] = useState(0);
+
+  const favoritesToken = (() => {
+    if (authToken) return authToken;
+
+    try {
+      return (
+        localStorage.getItem('token') ||
+        localStorage.getItem('accessToken') ||
+        localStorage.getItem('access_token') ||
+        ''
+      );
+    } catch {
+      return '';
+    }
+  })();
+
+  const loadFavoriteCount = useCallback(async () => {
+    if (!currentUser || !favoritesToken) {
+      setFavoriteCount(0);
+      return;
+    }
+
+    try {
+      const apiBaseUrl = (
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+      ).replace(/\/+$/, '');
+
+      const response = await fetch(`${apiBaseUrl}/api/favorites`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${favoritesToken}`,
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load favorite count');
+      }
+
+      const result = await response.json();
+
+      const favorites = Array.isArray(result?.data)
+        ? result.data
+        : Array.isArray(result?.favorites)
+          ? result.favorites
+          : Array.isArray(result?.data?.favorites)
+            ? result.data.favorites
+            : [];
+
+      const uniquePlaceIds = new Set(
+        favorites
+          .map((favorite) => {
+            const id =
+              favorite?.tourist_place_id ??
+              favorite?.place_id ??
+              favorite?.touristPlaceId ??
+              favorite?.place?.id ??
+              favorite?.touristPlace?.id ??
+              favorite?.id;
+
+            return id == null || id === '' ? null : String(id);
+          })
+          .filter((id) => id !== null),
+      );
+
+      setFavoriteCount(uniquePlaceIds.size);
+    } catch (error) {
+      console.error('Failed to load favorite count:', error);
+    }
+  }, [currentUser, favoritesToken]);
+
+  useEffect(() => {
+    loadFavoriteCount();
+  }, [loadFavoriteCount, activeTab]);
+
+  useEffect(() => {
+    const handleFavoritesUpdated = () => {
+      loadFavoriteCount();
+    };
+
+    window.addEventListener('favoritesUpdated', handleFavoritesUpdated);
+
+    return () => {
+      window.removeEventListener('favoritesUpdated', handleFavoritesUpdated);
+    };
+  }, [loadFavoriteCount]);
 
   const theme = useTheme();
 
@@ -385,17 +471,19 @@ export const Header = ({
 
           {/* Right-side actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Tooltip title="View Itinerary">
+            <Tooltip title="View Bookmarks">
               <IconButton
-                onClick={() => onTabChange('planner')}
-                aria-label="View Itinerary"
+                onClick={() => onTabChange('bookmarks')}
+                aria-label="View Bookmarks"
                 sx={{
                   minWidth: 44,
                   minHeight: 44,
                   color:
-                    activeTab === 'planner' ? 'primary.main' : 'text.secondary',
+                    activeTab === 'bookmarks'
+                      ? 'primary.main'
+                      : 'text.secondary',
                   bgcolor:
-                    activeTab === 'planner'
+                    activeTab === 'bookmarks'
                       ? theme.palette.mode === 'dark'
                         ? 'rgba(74, 222, 128, 0.15)'
                         : 'rgba(45, 106, 79, 0.08)'
@@ -404,7 +492,12 @@ export const Header = ({
                   p: 1,
                 }}
               >
-                <Badge badgeContent={planCount} color="primary" max={99}>
+                <Badge
+                  badgeContent={favoriteCount}
+                  color="primary"
+                  max={99}
+                  invisible={favoriteCount === 0}
+                >
                   <BookmarkIcon fontSize="small" />
                 </Badge>
               </IconButton>
@@ -438,7 +531,6 @@ export const Header = ({
                 </IconButton>
               </Tooltip>
             )}
-
             {/* Login / Profile button */}
             <Tooltip
               title={
@@ -490,7 +582,6 @@ export const Header = ({
                 )}
               </IconButton>
             </Tooltip>
-
             {/* Profile dropdown */}
             <Menu
               anchorEl={profileAnchor}
@@ -545,7 +636,6 @@ export const Header = ({
                 Logout
               </MenuItem>
             </Menu>
-
             {/* Mobile navigation button */}
             <IconButton
               onClick={handleDrawerToggle}
