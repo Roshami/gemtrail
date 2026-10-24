@@ -19,25 +19,21 @@ export const Footer = ({
 
   return (
     <footer className="bg-[#ede7da] border-t border-[#ded5c5] pt-14 pb-8 text-[#4a524c]">
-      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
+      <div className="max-w-360 mx-auto px-3 sm:px-6 lg:px-8">
         
         {/* 4-Column Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-[#ded5c5]">
           
           {/* Col 1: Brand & Endorsement */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#4a7c59] text-white flex items-center justify-center">
-                <Diamond className="w-4 h-4" />
-              </div>
-              <span className="font-serif text-xl font-bold text-[#1f2622] tracking-tight">
-                GemTrail
-              </span>
-            </div>
-
-            <p className="text-xs text-[#5c645e] leading-relaxed">
+            <div className="flex items-center gap-1.5">
+              <img src="/public/logo.png" alt="GemTrail Logo" className="w-30 object-contain" />
+              <p className="text-xs text-[#5c645e] leading-relaxed">
               The definitive heritage portal honoring the City of Gems. Unearthing three millennia of artisan mining, rainforest sanctuaries, and hill country legacy.
             </p>
+            </div>
+
+            
 
             <div className="flex items-center gap-2 text-xs font-semibold text-[#705c30] pt-1">
               <ShieldCheck className="w-4 h-4 text-[#4a7c59]" />

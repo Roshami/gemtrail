@@ -390,24 +390,8 @@ export const Header = ({
               minHeight: 44,
             }}
           >
-            <Box
-              sx={{
-                width: 38,
-                height: 38,
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%)',
-                color: '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(45, 106, 79, 0.25)',
-                transition: 'transform 0.2s ease',
-                '&:hover': { transform: 'scale(1.05)' },
-              }}
-            >
-              <DiamondIcon sx={{ fontSize: 20 }} />
-            </Box>
-
+            <img src='/public/logo1.png' alt='GemTrail Logo' style={{ width: 50, objectFit: 'contain' }} />
+            
             <Typography
               variant="h6"
               sx={{
@@ -416,18 +400,11 @@ export const Header = ({
                 lineHeight: 1,
                 color: theme.palette.text.primary,
                 letterSpacing: '-0.02em',
-                fontSize: { xs: '1.15rem', sm: '1.25rem' },
+                
                 whiteSpace: 'nowrap',
               }}
             >
-              GemTrail
-              <Box
-                component="span"
-                sx={{ display: { xs: 'none', sm: 'inline' } }}
-              >
-                {' '}
-                Ratnapura
-              </Box>
+              <img src='/public/logo2.png' alt='GemTrail Logo' style={{ width: 200, objectFit: 'contain' }} />
             </Typography>
           </Box>
 
