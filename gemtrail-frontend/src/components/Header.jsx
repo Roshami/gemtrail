@@ -204,7 +204,6 @@ export const Header = ({
       id: 'planner',
       label: 'Trip Planner',
       icon: <TimelineIcon fontSize="small" />,
-      badge: planCount,
     },
     {
       id: 'stories',
