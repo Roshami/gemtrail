@@ -324,6 +324,7 @@ export default function AdminPanelView({
 
   useEffect(() => {
     loadData();
+    console.log('AdminPanelView: Data loaded', places, categories);
   }, [loadData]);
 
   const filteredPlaces = useMemo(() => {
@@ -337,6 +338,8 @@ export default function AdminPanelView({
           place.location,
           place.district,
           place.short_description,
+          place.category_name,
+          getCategoryName(place.category_id ?? place.categoryId),
         ].some((value) =>
           String(value || '')
             .toLowerCase()
@@ -361,7 +364,12 @@ export default function AdminPanelView({
     page * rowsPerPage + rowsPerPage,
   );
 
-  const getCategoryName = (categoryId) => {
+  const getCategoryName = (categoryId, categoryName) => {
+    // Prefer the category name returned by the backend, if available.
+    if (typeof categoryName === 'string' && categoryName.trim()) {
+      return categoryName;
+    }
+
     const category = categories.find(
       (item) => String(item.id) === String(categoryId),
     );
@@ -759,7 +767,7 @@ export default function AdminPanelView({
                       </TableCell>
 
                       <TableCell>
-                        {getCategoryName(place.category_id)}
+                        {getCategoryName(place.category_id ?? place.categoryId, place.category_name ?? place.categoryName)}
                       </TableCell>
 
                       <TableCell>{place.district || '—'}</TableCell>
@@ -991,7 +999,7 @@ export default function AdminPanelView({
               </Typography>
 
               <Typography color="text.secondary">
-                {getCategoryName(selectedPlace.category_id)} ·{' '}
+                {getCategoryName(selectedPlace.category_id ?? selectedPlace.categoryId, selectedPlace.category_name ?? selectedPlace.categoryName)} ·{' '}
                 {selectedPlace.district || 'No district'}
               </Typography>
 

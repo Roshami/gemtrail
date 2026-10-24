@@ -40,7 +40,46 @@ import {
 // file if your Express backend runs on port 5000.
 // Leave it empty to use a Vite proxy or same-origin backend.
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || 'http://localhost:5000'
+).replace(/\/+$/, '').replace(/\/api$/, '');
+
+async function loadBackendData() {
+  try {
+    const [placesResponse, categoriesResponse] = await Promise.all([
+      fetch(`${API_BASE_URL}/api/places`),
+      fetch(`${API_BASE_URL}/api/categories`),
+    ]);
+
+    if (!placesResponse.ok) {
+      throw new Error(
+        `Places API returned HTTP ${placesResponse.status}`
+      );
+    }
+
+    if (!categoriesResponse.ok) {
+      throw new Error(
+        `Categories API returned HTTP ${categoriesResponse.status}`
+      );
+    }
+
+    const [placesResult, categoriesResult] = await Promise.all([
+      placesResponse.json(),
+      categoriesResponse.json(),
+    ]);
+
+    const placesData = placesResult.data ?? placesResult.places ?? [];
+    const categoriesData =
+      categoriesResult.data ?? categoriesResult.categories ?? [];
+
+    // Continue with your existing normalization and state updates here.
+    //console.log('Places loaded:', placesData);
+   // console.log('Categories loaded:', categoriesData);
+  } catch (error) {
+    console.error('Backend loading error:', error);
+  }
+}
 
 // ------------------------------------------------------
 // API RESPONSE HELPERS

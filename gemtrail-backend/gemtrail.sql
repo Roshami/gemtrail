@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 22, 2026 at 03:58 PM
+-- Generation Time: Oct 23, 2026 at 08:44 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -90,11 +90,11 @@ CREATE TABLE `itinerary_places` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `itinerary_id` bigint(20) UNSIGNED NOT NULL,
   `tourist_place_id` bigint(20) UNSIGNED NOT NULL,
-  `stop_order` int(10) UNSIGNED NOT NULL,
-  `planned_arrival` time DEFAULT NULL,
-  `planned_duration_minutes` smallint(5) UNSIGNED DEFAULT NULL,
-  `estimated_travel_minutes` smallint(5) UNSIGNED DEFAULT NULL,
+  `visit_date` date DEFAULT NULL,
+  `start_time` time DEFAULT NULL,
+  `end_time` time DEFAULT NULL,
   `notes` text DEFAULT NULL,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -216,6 +216,14 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `role`, `created_at`, `updated_at`) VALUES
+(1, 'admin', 'admin@email.com', '123', 'admin', '2026-10-22 16:10:54', '2026-10-22 16:10:54'),
+(2, 'admin', 'admin@example.com', '$2a$12$B8cIRqa0h9RjQmBRG/w5K.KBHts2nXhy3eX6Jj9dWaEVuS63sYs5W', 'admin', '2026-10-22 16:51:57', '2026-10-22 16:52:13');
+
+--
 -- Indexes for dumped tables
 --
 
@@ -231,8 +239,7 @@ ALTER TABLE `categories`
 --
 ALTER TABLE `favorites`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_favorite_user_place` (`user_id`,`tourist_place_id`),
-  ADD KEY `idx_favorites_place` (`tourist_place_id`);
+  ADD UNIQUE KEY `unique_user_favorite` (`user_id`,`tourist_place_id`);
 
 --
 -- Indexes for table `itineraries`
@@ -247,8 +254,9 @@ ALTER TABLE `itineraries`
 --
 ALTER TABLE `itinerary_places`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_itinerary_stop_order` (`itinerary_id`,`stop_order`),
-  ADD KEY `idx_itinerary_places_place` (`tourist_place_id`);
+  ADD UNIQUE KEY `unique_itinerary_place` (`itinerary_id`,`tourist_place_id`),
+  ADD KEY `idx_itinerary` (`itinerary_id`),
+  ADD KEY `idx_tourist_place` (`tourist_place_id`);
 
 --
 -- Indexes for table `place_reviews`
@@ -321,18 +329,11 @@ ALTER TABLE `tourist_places`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Constraints for dumped tables
 --
-
---
--- Constraints for table `favorites`
---
-ALTER TABLE `favorites`
-  ADD CONSTRAINT `fk_favorites_place` FOREIGN KEY (`tourist_place_id`) REFERENCES `tourist_places` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_favorites_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `itineraries`
@@ -344,8 +345,8 @@ ALTER TABLE `itineraries`
 -- Constraints for table `itinerary_places`
 --
 ALTER TABLE `itinerary_places`
-  ADD CONSTRAINT `fk_itinerary_places_itinerary` FOREIGN KEY (`itinerary_id`) REFERENCES `itineraries` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_itinerary_places_tourist_place` FOREIGN KEY (`tourist_place_id`) REFERENCES `tourist_places` (`id`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_itinerary_places_itinerary` FOREIGN KEY (`itinerary_id`) REFERENCES `itineraries` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_itinerary_places_place` FOREIGN KEY (`tourist_place_id`) REFERENCES `tourist_places` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `place_reviews`

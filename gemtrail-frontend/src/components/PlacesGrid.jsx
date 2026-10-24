@@ -15,9 +15,11 @@ import {
   DialogTitle,
   FormControl,
   IconButton,
+  InputAdornment,
   MenuItem,
   Select,
   Snackbar,
+  TextField,
   Tooltip,
   Typography,
   useTheme,
@@ -31,6 +33,7 @@ import {
   AccessTime as AccessTimeIcon,
   ArrowForward as ArrowForwardIcon,
   AddLocationAlt as AddLocationAltIcon,
+  CalendarMonth as CalendarMonthIcon,
 } from '@mui/icons-material';
 
 // Set VITE_API_BASE_URL=http://localhost:5000/api in .env if required.
@@ -85,6 +88,20 @@ export const PlacesGrid = ({
   const [addingPlace, setAddingPlace] = useState(false);
 
   const [plannerOpen, setPlannerOpen] = useState(false);
+  const [createFormOpen, setCreateFormOpen] = useState(false);
+  const [creatingItinerary, setCreatingItinerary] = useState(false);
+  const [newItinerary, setNewItinerary] = useState({
+    title: '',
+    trip_date: '',
+    start_time: '',
+    end_time: '',
+    start_location: '',
+    radius_km: '25',
+    transport_method: 'Car',
+    estimated_cost: '',
+    notes: '',
+    status: 'draft',
+  });
   const [toast, setToast] = useState({
     open: false,
     message: '',
@@ -188,8 +205,22 @@ export const PlacesGrid = ({
 
     try {
       const result = await request('/itineraries');
-      setItineraries(result.data || []);
-      setSelectedItinerary((result.data || [])[0]?.id?.toString() || '');
+      const loadedItineraries = result.data || [];
+      setItineraries(loadedItineraries);
+      setSelectedItinerary(loadedItineraries[0]?.id?.toString() || '');
+      setCreateFormOpen(loadedItineraries.length === 0);
+      setNewItinerary({
+        title: '',
+        trip_date: '',
+        start_time: '',
+        end_time: '',
+        start_location: '',
+        radius_km: '25',
+        transport_method: 'Car',
+        estimated_cost: '',
+        notes: '',
+        status: 'draft',
+      });
       setPlannerOpen(true);
     } catch (error) {
       showToast(
@@ -262,6 +293,107 @@ export const PlacesGrid = ({
 
     setSelectedPlace(place);
     loadItineraries();
+  };
+
+  const handleNewItineraryChange = (event) => {
+    const { name, value } = event.target;
+    setNewItinerary((previous) => ({
+      title: '',
+      trip_date: '',
+      start_time: '',
+      end_time: '',
+      start_location: '',
+      radius_km: '25',
+      transport_method: 'Car',
+      estimated_cost: '',
+      notes: '',
+      status: 'draft',
+      ...(previous || {}),
+      [name]: value ?? '',
+    }));
+  };
+
+  // Create a new itinerary from this popup and save it to the backend.
+  const handleCreateItinerary = async (event) => {
+    event.preventDefault();
+
+    if (!newItinerary.title.trim() || !newItinerary.trip_date) {
+      showToast('Please enter a title and select a trip date.', 'warning');
+      return;
+    }
+
+    if (
+      newItinerary.start_time &&
+      newItinerary.end_time &&
+      newItinerary.end_time <= newItinerary.start_time
+    ) {
+      showToast('End time must be later than start time.', 'warning');
+      return;
+    }
+
+    const radius = newItinerary.radius_km === ''
+      ? null
+      : Number(newItinerary.radius_km);
+    const cost = newItinerary.estimated_cost === ''
+      ? null
+      : Number(newItinerary.estimated_cost);
+
+    if (radius !== null && (!Number.isFinite(radius) || radius < 0)) {
+      showToast('Please enter a valid search radius.', 'warning');
+      return;
+    }
+    if (cost !== null && (!Number.isFinite(cost) || cost < 0)) {
+      showToast('Please enter a valid estimated cost.', 'warning');
+      return;
+    }
+
+    setCreatingItinerary(true);
+    try {
+      const result = await request('/itineraries', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: newItinerary.title.trim(),
+          trip_date: newItinerary.trip_date,
+          start_time: newItinerary.start_time || null,
+          end_time: newItinerary.end_time || null,
+          start_location: newItinerary.start_location.trim() || null,
+          radius_km: radius,
+          transport_method: newItinerary.transport_method || null,
+          estimated_cost: cost,
+          notes: newItinerary.notes.trim() || null,
+          status: newItinerary.status,
+        }),
+      });
+
+      const created = result.data || result.itinerary || result;
+      if (!created?.id) {
+        throw new Error('Itinerary was saved, but the server did not return its ID.');
+      }
+
+      setItineraries((previous) => [
+        ...previous,
+        created,
+      ]);
+      setSelectedItinerary(String(created.id));
+      setCreateFormOpen(false);
+      setNewItinerary({
+        title: '',
+        trip_date: '',
+        start_time: '',
+        end_time: '',
+        start_location: '',
+        radius_km: '25',
+        transport_method: 'Car',
+        estimated_cost: '',
+        notes: '',
+        status: 'draft',
+      });
+      showToast('Itinerary created. You can now add this place to it.');
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Could not create itinerary.'), 'error');
+    } finally {
+      setCreatingItinerary(false);
+    }
   };
 
   // Add the selected place to the selected itinerary.
@@ -379,7 +511,7 @@ export const PlacesGrid = ({
 
           <FormControl size="small">
             <Select
-              value={sortBy || 'name'}
+              value={sortBy ?? 'name'}
               onChange={(event) =>
                 onSortChange?.(event.target.value)
               }
@@ -639,42 +771,38 @@ export const PlacesGrid = ({
         })}
       </Box>
 
-      {/* Select an existing itinerary */}
+      {/* Itinerary selector and create-itinerary form */}
       <Dialog
         open={plannerOpen}
         onClose={() => {
-          if (!addingPlace) {
+          if (!addingPlace && !creatingItinerary) {
             setPlannerOpen(false);
             setSelectedPlace(null);
           }
         }}
         fullWidth
-        maxWidth="sm"
+        maxWidth="md"
+        scroll="paper"
       >
-        <DialogTitle>Add place to itinerary</DialogTitle>
+        <DialogTitle>
+          Add place to itinerary
+        </DialogTitle>
 
-        <DialogContent>
+        <DialogContent dividers>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Place: {selectedPlace?.name || ''}
           </Typography>
 
-          {itineraries.length === 0 ? (
-            <Alert severity="info">
-              You do not have an itinerary yet. Create one first from
-              your Itinerary Planner.
-            </Alert>
-          ) : (
-            <FormControl fullWidth sx={{ mt: 1 }}>
+          {itineraries.length > 0 && (
+            <FormControl fullWidth sx={{ mt: 1, mb: 2 }}>
               <Typography variant="body2" sx={{ mb: 1 }}>
                 Select your trip
               </Typography>
 
               <Select
-                value={selectedItinerary}
-                onChange={(event) =>
-                  setSelectedItinerary(event.target.value)
-                }
-                disabled={addingPlace}
+                value={selectedItinerary ?? ''}
+                onChange={(event) => setSelectedItinerary(event.target.value)}
+                disabled={addingPlace || creatingItinerary}
                 displayEmpty
               >
                 {itineraries.map((itinerary) => (
@@ -691,6 +819,200 @@ export const PlacesGrid = ({
               </Select>
             </FormControl>
           )}
+
+          {!createFormOpen ? (
+            <Button
+              variant="outlined"
+              startIcon={<AddLocationAltIcon />}
+              onClick={() => setCreateFormOpen(true)}
+              sx={{ mt: 1, mb: 1, textTransform: 'none' }}
+            >
+              Create New Itinerary
+            </Button>
+          ) : (
+            <Box
+              component="form"
+              id="create-itinerary-form"
+              onSubmit={handleCreateItinerary}
+              sx={{
+                mt: 2,
+                p: { xs: 1.5, sm: 2.5 },
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 2,
+              }}
+            >
+              <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+                {itineraries.length === 0
+                  ? 'Create your first itinerary'
+                  : 'Create a new itinerary'}
+              </Typography>
+
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                  gap: 2,
+                }}
+              >
+                <TextField
+                  required
+                  fullWidth
+                  name="title"
+                  label="Itinerary Title"
+                  placeholder="e.g. Kandy Day Trip"
+                  value={newItinerary.title ?? ''}
+                  onChange={handleNewItineraryChange}
+                  slotProps={{ htmlInput: { maxLength: 180 } }}
+                  disabled={creatingItinerary}
+                  sx={{ gridColumn: { sm: '1 / -1' } }}
+                />
+
+                <TextField
+                  required
+                  fullWidth
+                  type="date"
+                  name="trip_date"
+                  label="Trip Date"
+                  value={newItinerary.trip_date ?? ''}
+                  onChange={handleNewItineraryChange}
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <CalendarMonthIcon color="action" />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                  disabled={creatingItinerary}
+                />
+
+                <TextField
+                  select
+                  fullWidth
+                  name="status"
+                  label="Status"
+                  value={newItinerary.status ?? ''}
+                  onChange={handleNewItineraryChange}
+                  disabled={creatingItinerary}
+                >
+                  <MenuItem value="draft">Draft</MenuItem>
+                  <MenuItem value="saved">Saved</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                </TextField>
+
+                <TextField
+                  fullWidth
+                  type="time"
+                  name="start_time"
+                  label="Start Time"
+                  value={newItinerary.start_time ?? ''}
+                  onChange={handleNewItineraryChange}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  disabled={creatingItinerary}
+                />
+
+                <TextField
+                  fullWidth
+                  type="time"
+                  name="end_time"
+                  label="End Time"
+                  value={newItinerary.end_time ?? ''}
+                  onChange={handleNewItineraryChange}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  disabled={creatingItinerary}
+                />
+
+                <TextField
+                  fullWidth
+                  name="start_location"
+                  label="Starting Location"
+                  placeholder="e.g. Colombo"
+                  value={newItinerary.start_location ?? ''}
+                  onChange={handleNewItineraryChange}
+                  disabled={creatingItinerary}
+                />
+
+                <TextField
+                  fullWidth
+                  type="number"
+                  name="radius_km"
+                  label="Search Radius (km)"
+                  value={newItinerary.radius_km ?? ''}
+                  onChange={handleNewItineraryChange}
+                  slotProps={{ htmlInput: { min: 0, max: 9999.99, step: 0.1 } }}
+                  disabled={creatingItinerary}
+                />
+
+                <TextField
+                  select
+                  fullWidth
+                  name="transport_method"
+                  label="Transport Method"
+                  value={newItinerary.transport_method ?? ''}
+                  onChange={handleNewItineraryChange}
+                  disabled={creatingItinerary}
+                >
+                  {['Car', 'Van', 'Bus', 'Train', 'Bike', 'Bicycle', 'Walking', 'Other'].map((method) => (
+                    <MenuItem key={method} value={method}>
+                      {method}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  fullWidth
+                  type="number"
+                  name="estimated_cost"
+                  label="Estimated Cost (LKR)"
+                  value={newItinerary.estimated_cost ?? ''}
+                  onChange={handleNewItineraryChange}
+                  slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                  disabled={creatingItinerary}
+                />
+
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={3}
+                  name="notes"
+                  label="Notes"
+                  placeholder="Trip details or anything to remember"
+                  value={newItinerary.notes ?? ''}
+                  onChange={handleNewItineraryChange}
+                  disabled={creatingItinerary}
+                  sx={{ gridColumn: { sm: '1 / -1' } }}
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 2 }}>
+                {itineraries.length > 0 && (
+                  <Button
+                    type="button"
+                    color="inherit"
+                    onClick={() => setCreateFormOpen(false)}
+                    disabled={creatingItinerary}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={creatingItinerary}
+                  startIcon={
+                    creatingItinerary
+                      ? <CircularProgress size={18} color="inherit" />
+                      : <AddLocationAltIcon />
+                  }
+                >
+                  {creatingItinerary ? 'Saving...' : 'Save Itinerary'}
+                </Button>
+              </Box>
+            </Box>
+          )}
         </DialogContent>
 
         <DialogActions sx={{ p: 2 }}>
@@ -698,10 +1020,11 @@ export const PlacesGrid = ({
             onClick={() => {
               setPlannerOpen(false);
               setSelectedPlace(null);
+              setCreateFormOpen(false);
             }}
-            disabled={addingPlace}
+            disabled={addingPlace || creatingItinerary}
           >
-            Cancel
+            Close
           </Button>
 
           <Button
@@ -709,6 +1032,7 @@ export const PlacesGrid = ({
             onClick={handleAddToItinerary}
             disabled={
               addingPlace ||
+              creatingItinerary ||
               loadingItineraries ||
               itineraries.length === 0 ||
               !selectedItinerary

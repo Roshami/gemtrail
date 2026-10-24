@@ -69,80 +69,176 @@ function buildValues(body, create = false) {
     Object.entries(data).filter(([k, v]) => allowed.has(k) && v !== undefined),
   );
 }
+
 exports.list = async (req, res) => {
-  const page = positiveInt(req.query.page, 1, 1000000),
-    limit = positiveInt(req.query.limit, 12, 100),
-    offset = (page - 1) * limit,
-    where = ['p.is_active=1'],
-    params = [];
-  if (req.query.q) {
-    where.push(
-      '(p.name LIKE ? OR p.short_description LIKE ? OR p.description LIKE ? OR p.location LIKE ?)',
-    );
-    const q = `%${String(req.query.q).slice(0, 150)}%`;
-    params.push(q, q, q, q);
-  }
-  if (req.query.category_id) {
-    where.push('p.category_id=?');
-    params.push(validateId(req.query.category_id, 'category_id'));
-  }
-  if (req.query.district) {
-    where.push('p.district=?');
-    params.push(String(req.query.district).slice(0, 100));
-  }
-  if (req.query.min_rating !== undefined) {
-    const n = optionalNumber(req.query.min_rating, 0, 5, 'min_rating');
-    where.push('p.rating>=?');
-    params.push(n);
-  }
-  const lat = optionalNumber(req.query.latitude, -90, 90, 'latitude'),
-    lng = optionalNumber(req.query.longitude, -180, 180, 'longitude'),
-    radius = optionalNumber(req.query.radius_km, 0.1, 500, 'radius_km');
-  if ((lat === null) !== (lng === null))
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: 'latitude and longitude must be supplied together.',
-      });
-  let distanceExpr = null;
-  if (lat !== null) {
-    distanceExpr =
-      '(6371 * 2 * ASIN(SQRT(POWER(SIN(RADIANS(p.latitude-?)/2),2) + COS(RADIANS(?))*COS(RADIANS(p.latitude))*POWER(SIN(RADIANS(p.longitude-?)/2),2))))';
-    if (radius !== null) {
-      where.push(`${distanceExpr} <= ?`);
-      params.push(lat, lat, lng, radius);
+  try {
+    const where = ['p.is_active = 1'];
+    const params = [];
+
+    // Search filter
+    if (req.query.q) {
+      where.push(
+        `(
+          p.name LIKE ?
+          OR p.short_description LIKE ?
+          OR p.description LIKE ?
+          OR p.location LIKE ?
+        )`
+      );
+
+      const q = `%${String(req.query.q).slice(0, 150)}%`;
+      params.push(q, q, q, q);
     }
-  }
-  const whereSql = where.join(' AND '),
-    order = String(req.query.sort || 'name'),
-    orderSql =
-      order === 'rating'
+
+    // Category filter
+    if (req.query.category_id) {
+      where.push('p.category_id = ?');
+      params.push(
+        validateId(req.query.category_id, 'category_id')
+      );
+    }
+
+    // District filter
+    if (req.query.district) {
+      where.push('p.district = ?');
+      params.push(String(req.query.district).slice(0, 100));
+    }
+
+    // Minimum rating filter
+    if (req.query.min_rating !== undefined) {
+      const rating = optionalNumber(
+        req.query.min_rating,
+        0,
+        5,
+        'min_rating'
+      );
+
+      where.push('p.rating >= ?');
+      params.push(rating);
+    }
+
+    // Location / distance filter
+    const lat = optionalNumber(
+      req.query.latitude,
+      -90,
+      90,
+      'latitude'
+    );
+
+    const lng = optionalNumber(
+      req.query.longitude,
+      -180,
+      180,
+      'longitude'
+    );
+
+    const radius = optionalNumber(
+      req.query.radius_km,
+      0.1,
+      500,
+      'radius_km'
+    );
+
+    if ((lat === null) !== (lng === null)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'latitude and longitude must be supplied together.',
+      });
+    }
+
+    let distanceExpr = null;
+
+    if (lat !== null) {
+      distanceExpr = `
+        (
+          6371 * 2 * ASIN(
+            SQRT(
+              POWER(
+                SIN(RADIANS(p.latitude - ?) / 2),
+                2
+              ) +
+              COS(RADIANS(?)) *
+              COS(RADIANS(p.latitude)) *
+              POWER(
+                SIN(RADIANS(p.longitude - ?) / 2),
+                2
+              )
+            )
+          )
+        )
+      `;
+
+      if (radius !== null) {
+        where.push(`${distanceExpr} <= ?`);
+        params.push(lat, lat, lng, radius);
+      }
+    }
+
+    const whereSql = where.join(' AND ');
+
+    // Sorting
+    const sort = String(req.query.sort || 'name');
+
+    const orderSql =
+      sort === 'rating'
         ? 'p.rating DESC, p.name ASC'
-        : order === 'newest'
+        : sort === 'newest'
           ? 'p.created_at DESC'
-          : 'p.name ASC',
-    selectDistance = lat !== null ? `, ${distanceExpr} AS distance_km` : '',
-    selectParams = lat !== null ? [lat, lat, lng] : [];
-  const [countRows] = await db.execute(
-    `SELECT COUNT(*) AS total FROM tourist_places p WHERE ${whereSql}`,
-    params,
-  );
-  const [rows] = await db.execute(
-    `SELECT p.*,c.name AS category_name${selectDistance} FROM tourist_places p LEFT JOIN categories c ON c.id=p.category_id WHERE ${whereSql} ORDER BY ${orderSql} LIMIT ${limit} OFFSET ${offset}`,
-    [...selectParams, ...params],
-  );
-  res.json({
-    success: true,
-    data: rows,
-    pagination: {
-      page,
-      limit,
-      total: countRows[0].total,
-      totalPages: Math.ceil(countRows[0].total / limit),
-    },
-  });
+          : 'p.name ASC';
+
+    const selectDistance =
+      lat !== null
+        ? `, ${distanceExpr} AS distance_km`
+        : '';
+
+    const selectParams =
+      lat !== null ? [lat, lat, lng] : [];
+
+    // Count all matching active places
+    const [countRows] = await db.execute(
+      `
+        SELECT COUNT(*) AS total
+        FROM tourist_places p
+        WHERE ${whereSql}
+      `,
+      params
+    );
+
+    // Get ALL matching places: no LIMIT or OFFSET
+    const [rows] = await db.execute(
+      `
+        SELECT
+          p.*,
+          c.name AS category_name
+          ${selectDistance}
+        FROM tourist_places p
+        LEFT JOIN categories c
+          ON c.id = p.category_id
+        WHERE ${whereSql}
+        ORDER BY ${orderSql}
+      `,
+      [...selectParams, ...params]
+    );
+
+    return res.json({
+      success: true,
+      data: rows,
+      total: rows.length,
+      pagination: {
+        total: countRows[0].total,
+      },
+    });
+  } catch (error) {
+    console.error('Error loading places:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to load places.',
+    });
+  }
 };
+
 exports.topRated = async (req, res) => {
   const limit = positiveInt(req.query.limit, 6, 50);
   const [rows] = await db.execute(
