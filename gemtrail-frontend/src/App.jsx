@@ -9,11 +9,10 @@ import { HeroSection } from './components/HeroSection.jsx';
 import { Places } from './components/Places.jsx';
 import { PlaceDetailModal } from './components/PlaceDetailModal.jsx';
 import { DirectionsModal } from './components/DirectionsModal.jsx';
-
 import AllItineraryPlans from './pages/AllItineraryPlans.jsx';
 import { GemTrailsView } from './pages/GemTrailsView.jsx';
 import { StoriesGuidesView } from './pages/StoriesGuidesView.jsx';
-import { AboutSabaragamuwaView } from './pages/AboutSabaragamuwaView.jsx';
+import { AboutRatnapuraView } from './pages/AboutRatnapuraView.jsx';
 import { MapPageView } from './pages/MapPageView.jsx';
 import AdminPanelView from './pages/AdminPanelView.jsx';
 import { LoginView } from './pages/LoginView.jsx';
@@ -433,7 +432,11 @@ export default function App() {
   );
 
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
+    // Normalize alternate login tab names used by navigation components.
+    const normalizedTab =
+      tab === 'admin' || tab === 'admin-login' ? 'login' : tab;
+
+    setActiveTab(normalizedTab);
   };
 
   // Visitor login success
@@ -1046,7 +1049,7 @@ export default function App() {
           {activeTab === 'stories' && <StoriesGuidesView />}
 
           {/* About Sabaragamuwa */}
-          {activeTab === 'about' && <AboutSabaragamuwaView />}
+          {activeTab === 'about' && <AboutRatnapuraView />}
 
           {/* Bookmarks / favorited places */}
           {activeTab === 'bookmarks' && <BookmarkPage />}
@@ -1070,6 +1073,15 @@ export default function App() {
             />
           )}
           
+          {/* Login view */}
+          {(activeTab === 'login') && (
+            <LoginView
+              onLoginSuccess={handleAdminLogin}
+              onUserLoginSuccess={handleVisitorLogin}
+              onBackToExplore={(param) => setActiveTab(param || 'explore')}
+            />
+          )}
+
         </main>
 
         {/* Footer */}

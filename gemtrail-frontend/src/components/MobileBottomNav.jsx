@@ -435,7 +435,7 @@ export const MobileBottomNav = ({
                 <InfoIcon />
               </ListItemIcon>
               <ListItemText
-                primary="About Sabaragamuwa"
+                primary="About Ratnapura"
                 secondary="Regional geography, climate, and heritage"
                 slotProps={{
                   primary: { fontWeight: 700, fontSize: '0.9rem' },

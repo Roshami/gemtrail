@@ -323,7 +323,7 @@ export const Header = ({
     },
     {
       id: 'about',
-      label: 'About Sabaragamuwa',
+      label: 'About Ratnapura',
       icon: <InfoIcon fontSize="small" />,
     },
     {
@@ -400,11 +400,10 @@ export const Header = ({
                 lineHeight: 1,
                 color: theme.palette.text.primary,
                 letterSpacing: '-0.02em',
-                
                 whiteSpace: 'nowrap',
               }}
             >
-              <img src='/public/logo2.png' alt='GemTrail Logo' style={{ width: 200, objectFit: 'contain' }} />
+              <img src='/public/logo2.png' alt='GemTrail Logo' className='w-35 2xl:150 object-contain'  />
             </Typography>
           </Box>
 

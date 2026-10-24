@@ -152,6 +152,7 @@ export const LoginView = ({
         );
         window.setTimeout(() => {
           onLoginSuccess?.(user);
+          onBackToExplore?.('admin_panel');
         }, 400);
         return;
       }
@@ -555,5 +556,5 @@ export const LoginView = ({
   );
 };
 
-export const AdminLoginView = LoginView;
+
 export default LoginView;
