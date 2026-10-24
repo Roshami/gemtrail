@@ -31,6 +31,7 @@ import {
   getStoredDistrictInfo,
   saveStoredDistrictInfo,
 } from './utils/placesStorage.js';
+import UserProfileView from './pages/UserProfileView.jsx';
 
 // ------------------------------------------------------
 // API CONFIGURATION
@@ -874,6 +875,7 @@ export default function App() {
           planCount={plannedIds.length}
           themeMode={themeMode}
           onToggleTheme={toggleTheme}
+          onProfileClick={() => setActiveTab('profile')}
           isAdminLoggedIn={adminUser?.role === 'admin'}
           onAdminLogout={handleAdminLogout}
           currentUser={currentUser}
@@ -1044,6 +1046,11 @@ export default function App() {
 
           {/* About Sabaragamuwa */}
           {activeTab === 'about' && <AboutSabaragamuwaView />}
+
+          {/* User profile */}
+          {activeTab === 'profile' && (
+            <UserProfileView onBack={() => setActiveTab('explore')} />
+          )}
 
           {/* Admin panel */}
           {activeTab === 'admin' &&

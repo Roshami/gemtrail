@@ -136,3 +136,60 @@ exports.changePassword = async (req, res) => {
 
   res.json({ success: true, message: 'Password changed successfully.' });
 };
+
+exports.updateMe = async (req, res) => {
+  const { name, email } = req.body || {};
+
+  if (
+    typeof name !== 'string' ||
+    name.trim().length < 2 ||
+    name.trim().length > 120
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: 'Name must be 2–120 characters.',
+    });
+  }
+
+  if (
+    typeof email !== 'string' ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
+    email.trim().length > 190
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please enter a valid email address.',
+    });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Prevent another account from using this email.
+  const [existing] = await db.execute(
+    'SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1',
+    [normalizedEmail, req.user.id],
+  );
+
+  if (existing.length) {
+    return res.status(409).json({
+      success: false,
+      message: 'This email is already registered.',
+    });
+  }
+
+  await db.execute(
+    'UPDATE users SET name = ?, email = ? WHERE id = ?',
+    [name.trim(), normalizedEmail, req.user.id],
+  );
+
+  const [rows] = await db.execute(
+    'SELECT id, name, email, role, created_at FROM users WHERE id = ?',
+    [req.user.id],
+  );
+
+  return res.json({
+    success: true,
+    message: 'Profile updated successfully.',
+    data: rows[0],
+  });
+};

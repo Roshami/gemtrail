@@ -7,5 +7,6 @@ router.post('/register', asyncHandler(c.register));
 router.post('/login', asyncHandler(c.login));
 router.get('/me', authenticate, asyncHandler(c.me));
 router.post('/change-password', authenticate, asyncHandler(c.changePassword));
+router.put('/me', authenticate, asyncHandler(c.updateMe));
 
 module.exports = router;
