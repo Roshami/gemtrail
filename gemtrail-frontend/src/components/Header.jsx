@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { jwtDecode } from 'jwt-decode';
 import {
   AppBar,
   Toolbar,
@@ -75,6 +76,30 @@ export const Header = ({
   const [passwordError, setPasswordError] = useState(false);
 
   const [favoriteCount, setFavoriteCount] = useState(0);
+  const [isRoleAdmin, setIsRoleAdmin] = useState(false);
+
+  useEffect(() => {
+    try {
+      const token = authToken || localStorage.getItem('token');
+
+      if (!token) {
+        setIsRoleAdmin(false);
+        return;
+      }
+
+      const decodedToken = jwtDecode(token);
+
+      const roleString = String(decodedToken.role || '').toLowerCase();
+      if (roleString === 'admin') {
+        setIsRoleAdmin(true);
+      } else {
+        setIsRoleAdmin(false);
+      }
+    } catch (error) {
+      console.error('Failed to decode authentication token:', error);
+      setIsRoleAdmin(false);
+    }
+  }, [authToken, currentUser]);
 
   const favoritesToken = (() => {
     if (authToken) return authToken;
@@ -300,6 +325,13 @@ export const Header = ({
       id: 'about',
       label: 'About Sabaragamuwa',
       icon: <InfoIcon fontSize="small" />,
+    },
+    {
+      id: 'admin_panel',
+      label: 'Admin Panel',
+      icon: <AdminIcon fontSize="small" />,
+      // This item is only shown if the user is an admin
+      hidden: isRoleAdmin ? false : true,
     },
     {
       id: isUserLoggedIn ? 'profile' : 'admin',

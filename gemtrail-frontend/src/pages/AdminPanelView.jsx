@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -48,8 +48,9 @@ import {
   Star as StarIcon,
 } from '@mui/icons-material';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = `${API_BASE_URL}/api`;
+  
 
 const EMPTY_PLACE = {
   category_id: '',
@@ -255,13 +256,17 @@ export default function AdminPanelView({
     severity: 'success',
   });
 
+  // Keep the latest parent callback without making loadData change on every render.
+  const onUpdatePlacesRef = useRef(onUpdatePlaces);
+  onUpdatePlacesRef.current = onUpdatePlaces;
+
   const getToken = () =>
     localStorage.getItem('token') || localStorage.getItem('authToken') || '';
 
   const apiRequest = useCallback(async (endpoint, options = {}) => {
     const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers: {
         ...(options.body ? { 'Content-Type': 'application/json' } : {}),
@@ -312,19 +317,18 @@ export default function AdminPanelView({
       setPlaces(loadedPlaces);
       setCategories(loadedCategories);
 
-      if (onUpdatePlaces) {
-        onUpdatePlaces(loadedPlaces);
+      if (onUpdatePlacesRef.current) {
+        onUpdatePlacesRef.current(loadedPlaces);
       }
     } catch (err) {
       setError(err.message || 'Could not load places from the server.');
     } finally {
       setLoading(false);
     }
-  }, [apiRequest, onUpdatePlaces]);
+  }, [apiRequest]);
 
   useEffect(() => {
     loadData();
-    console.log('AdminPanelView: Data loaded', places, categories);
   }, [loadData]);
 
   const filteredPlaces = useMemo(() => {

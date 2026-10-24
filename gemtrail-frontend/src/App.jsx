@@ -1057,30 +1057,19 @@ export default function App() {
           )}
 
           {/* Admin panel */}
-          {activeTab === 'admin' &&
-            (adminUser?.role === 'admin' ? (
-              <AdminPanelView
-                places={places}
-                onUpdatePlaces={handleUpdatePlaces}
-                districtInfo={districtInfo}
-                onUpdateDistrictInfo={handleUpdateDistrictInfo}
-                onResetPlaces={handleResetPlaces}
-                adminUser={adminUser}
-                onLogout={handleAdminLogout}
-                onNavigateToExplore={() => setActiveTab('explore')}
-                onNavigateToMap={() => setActiveTab('map')}
-                onPreviewPlace={(place) => {
-                  setActivePlace(place);
-                  setDetailModalPlace(place);
-                }}
-              />
-            ) : (
-              <LoginView
-                onLoginSuccess={handleAdminLogin}
-                onUserLoginSuccess={handleVisitorLogin}
-                onBackToExplore={() => setActiveTab('explore')}
-              />
-            ))}
+          {activeTab === 'admin_panel' && (
+            <AdminPanelView
+              adminUser={adminUser}
+              onLogout={handleAdminLogout}
+              places={places}
+              categories={categories}
+              districtInfo={districtInfo}
+              onUpdatePlaces={handleUpdatePlaces}
+              onResetPlaces={handleResetPlaces}
+              onUpdateDistrictInfo={handleUpdateDistrictInfo}
+            />
+          )}
+          
         </main>
 
         {/* Footer */}
