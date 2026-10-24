@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   AppBar,
@@ -75,11 +74,18 @@ export const Header = ({
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  
 
   const theme = useTheme();
 
   const isUserLoggedIn = Boolean(currentUser) || isAdminLoggedIn;
-  const userName = currentUser?.name || currentUser?.displayName || 'User';
+
+  const userName =
+    currentUser?.name ||
+    currentUser?.displayName ||
+    currentUser?.username ||
+    (isAdminLoggedIn ? 'Admin' : 'Visitor');
+
   const userEmail = currentUser?.email || '';
 
   const handleDrawerToggle = () => {
@@ -120,9 +126,7 @@ export const Header = ({
 
     if (newPassword.length < 3 || newPassword.length > 128) {
       setPasswordError(true);
-      setPasswordMessage(
-        'New password must be between 3 and 128 characters.',
-      );
+      setPasswordMessage('New password must be between 3 and 128 characters.');
       return;
     }
 
@@ -163,24 +167,18 @@ export const Header = ({
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(
-          data.message || 'Unable to change password.',
-        );
+        throw new Error(data.message || 'Unable to change password.');
       }
 
       setPasswordError(false);
-      setPasswordMessage(
-        data.message || 'Password changed successfully.',
-      );
+      setPasswordMessage(data.message || 'Password changed successfully.');
 
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error) {
       setPasswordError(true);
-      setPasswordMessage(
-        error.message || 'Unable to connect to the server.',
-      );
+      setPasswordMessage(error.message || 'Unable to connect to the server.');
     } finally {
       setPasswordLoading(false);
     }
@@ -231,9 +229,7 @@ export const Header = ({
     },
   ];
 
-  const currentTabIndex = navItems.findIndex(
-    (item) => item.id === activeTab,
-  );
+  const currentTabIndex = navItems.findIndex((item) => item.id === activeTab);
 
   return (
     <>
@@ -282,8 +278,7 @@ export const Header = ({
                 width: 38,
                 height: 38,
                 borderRadius: '10px',
-                background:
-                  'linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%)',
+                background: 'linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%)',
                 color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
@@ -313,7 +308,8 @@ export const Header = ({
                 component="span"
                 sx={{ display: { xs: 'none', sm: 'inline' } }}
               >
-                {' '}Ratnapura
+                {' '}
+                Ratnapura
               </Box>
             </Typography>
           </Box>
@@ -327,11 +323,13 @@ export const Header = ({
           >
             <Tabs
               value={currentTabIndex >= 0 ? currentTabIndex : 0}
-              onChange={(_, newValue) =>
-                onTabChange(navItems[newValue].id)
-              }
+              onChange={(_, newValue) => onTabChange(navItems[newValue].id)}
               textColor="primary"
               indicatorColor="primary"
+              // display the tabs in a single row and allow horizontal scrolling if needed
+              variant="scrollable"
+              scrollButtons="auto"
+              allowScrollButtonsMobile
               sx={{
                 minHeight: 48,
                 '& .MuiTab-root': {
@@ -396,9 +394,7 @@ export const Header = ({
                   minWidth: 44,
                   minHeight: 44,
                   color:
-                    activeTab === 'planner'
-                      ? 'primary.main'
-                      : 'text.secondary',
+                    activeTab === 'planner' ? 'primary.main' : 'text.secondary',
                   bgcolor:
                     activeTab === 'planner'
                       ? theme.palette.mode === 'dark'
@@ -460,9 +456,7 @@ export const Header = ({
                     onTabChange('admin');
                   }
                 }}
-                aria-label={
-                  isUserLoggedIn ? 'Open User Profile' : 'Login'
-                }
+                aria-label={isUserLoggedIn ? 'Open User Profile' : 'Login'}
                 sx={{
                   minWidth: 44,
                   minHeight: 44,
@@ -513,10 +507,7 @@ export const Header = ({
               }}
             >
               <Box sx={{ px: 2, py: 1, minWidth: 210 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 800 }}
-                >
+                <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
                   {userName}
                 </Typography>
 
@@ -529,28 +520,15 @@ export const Header = ({
 
               <Divider />
 
-              <MenuItem
-                onClick={() => {
-                  setProfileAnchor(null);
-                  if (onProfileClick) {
-                    onProfileClick();
-                  } else {
-                    onTabChange('profile');
-                  }
-                }}
-              >
-                <AccountCircleIcon
-                  fontSize="small"
-                  sx={{ mr: 1.5 }}
-                />
-                Profile
+              <MenuItem>
+                <AccountCircleIcon fontSize="small" sx={{ mr: 1.5 }} />
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {userName || userEmail || 'User'}
+                </Typography>
               </MenuItem>
 
               <MenuItem onClick={openChangePassword}>
-                <LockResetIcon
-                  fontSize="small"
-                  sx={{ mr: 1.5 }}
-                />
+                <LockResetIcon fontSize="small" sx={{ mr: 1.5 }} />
                 Change Password
               </MenuItem>
 
@@ -617,8 +595,7 @@ export const Header = ({
                 width: 32,
                 height: 32,
                 borderRadius: '8px',
-                background:
-                  'linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%)',
+                background: 'linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%)',
                 color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
@@ -676,9 +653,7 @@ export const Header = ({
                   <ListItemIcon
                     sx={{
                       minWidth: 36,
-                      color: isSelected
-                        ? 'primary.main'
-                        : 'text.secondary',
+                      color: isSelected ? 'primary.main' : 'text.secondary',
                     }}
                   >
                     {item.badge !== undefined && item.badge > 0 ? (
@@ -774,7 +749,10 @@ export const Header = ({
         <Box component="form" onSubmit={handleChangePassword}>
           <DialogContent>
             {passwordMessage && (
-              <Alert severity={passwordError ? 'error' : 'success'} sx={{ mb: 2 }}>
+              <Alert
+                severity={passwordError ? 'error' : 'success'}
+                sx={{ mb: 2 }}
+              >
                 {passwordMessage}
               </Alert>
             )}
@@ -820,9 +798,7 @@ export const Header = ({
                       aria-label={
                         showPasswords ? 'Hide passwords' : 'Show passwords'
                       }
-                      onClick={() =>
-                        setShowPasswords((previous) => !previous)
-                      }
+                      onClick={() => setShowPasswords((previous) => !previous)}
                       edge="end"
                     >
                       {showPasswords ? <VisibilityOff /> : <Visibility />}
@@ -834,10 +810,7 @@ export const Header = ({
           </DialogContent>
 
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button
-              onClick={closeChangePassword}
-              disabled={passwordLoading}
-            >
+            <Button onClick={closeChangePassword} disabled={passwordLoading}>
               Cancel
             </Button>
 

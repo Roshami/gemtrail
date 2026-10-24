@@ -40,10 +40,9 @@ import {
 // file if your Express backend runs on port 5000.
 // Leave it empty to use a Vite proxy or same-origin backend.
 
-
-const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || 'http://localhost:5000'
-).replace(/\/+$/, '').replace(/\/api$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000')
+  .replace(/\/+$/, '')
+  .replace(/\/api$/, '');
 
 async function loadBackendData() {
   try {
@@ -53,14 +52,12 @@ async function loadBackendData() {
     ]);
 
     if (!placesResponse.ok) {
-      throw new Error(
-        `Places API returned HTTP ${placesResponse.status}`
-      );
+      throw new Error(`Places API returned HTTP ${placesResponse.status}`);
     }
 
     if (!categoriesResponse.ok) {
       throw new Error(
-        `Categories API returned HTTP ${categoriesResponse.status}`
+        `Categories API returned HTTP ${categoriesResponse.status}`,
       );
     }
 
@@ -75,7 +72,7 @@ async function loadBackendData() {
 
     // Continue with your existing normalization and state updates here.
     //console.log('Places loaded:', placesData);
-   // console.log('Categories loaded:', categoriesData);
+    // console.log('Categories loaded:', categoriesData);
   } catch (error) {
     console.error('Backend loading error:', error);
   }
@@ -120,17 +117,13 @@ function normalizeCategory(value) {
 // ------------------------------------------------------
 
 function normalizePlace(place, categories = []) {
-  const latitude =
-    place?.latitude ?? place?.coordinates?.lat ?? null;
+  const latitude = place?.latitude ?? place?.coordinates?.lat ?? null;
 
-  const longitude =
-    place?.longitude ?? place?.coordinates?.lng ?? null;
+  const longitude = place?.longitude ?? place?.coordinates?.lng ?? null;
 
-  const lat =
-    latitude === null || latitude === '' ? NaN : Number(latitude);
+  const lat = latitude === null || latitude === '' ? NaN : Number(latitude);
 
-  const lng =
-    longitude === null || longitude === '' ? NaN : Number(longitude);
+  const lng = longitude === null || longitude === '' ? NaN : Number(longitude);
 
   const hasValidCoordinates =
     Number.isFinite(lat) &&
@@ -140,12 +133,10 @@ function normalizePlace(place, categories = []) {
     lng >= -180 &&
     lng <= 180;
 
-  const categoryId =
-    place?.category_id ?? place?.categoryId ?? null;
+  const categoryId = place?.category_id ?? place?.categoryId ?? null;
 
   const matchedCategory = categories.find(
-    (category) =>
-      String(category.id) === String(categoryId)
+    (category) => String(category.id) === String(categoryId),
   );
 
   const categoryName =
@@ -158,8 +149,7 @@ function normalizePlace(place, categories = []) {
 
   let visitingTips = [];
 
-  const rawTips =
-    place?.visiting_tips ?? place?.visitingTips ?? [];
+  const rawTips = place?.visiting_tips ?? place?.visitingTips ?? [];
 
   if (Array.isArray(rawTips)) {
     visitingTips = rawTips;
@@ -188,48 +178,28 @@ function normalizePlace(place, categories = []) {
         place?.categorySlug ??
         place?.category_key ??
         place?.categoryKey ??
-        categoryName
+        categoryName,
     ),
 
     categoryLabel: categoryName,
 
-    shortDescription:
-      place?.short_description ??
-      place?.shortDescription ??
-      '',
+    shortDescription: place?.short_description ?? place?.shortDescription ?? '',
 
     description: place?.description ?? '',
 
     location: place?.location ?? '',
 
-    coordinates: hasValidCoordinates
-      ? { lat, lng }
-      : null,
+    coordinates: hasValidCoordinates ? { lat, lng } : null,
 
-    openingHours:
-      place?.opening_hours ??
-      place?.openingHours ??
-      '',
+    openingHours: place?.opening_hours ?? place?.openingHours ?? '',
 
-    entranceFee:
-      place?.entrance_fee ??
-      place?.entranceFee ??
-      'Free',
+    entranceFee: place?.entrance_fee ?? place?.entranceFee ?? 'Free',
 
-    transportInfo:
-      place?.transport_info ??
-      place?.transportInfo ??
-      '',
+    transportInfo: place?.transport_info ?? place?.transportInfo ?? '',
 
-    travelTime:
-      place?.travel_time ??
-      place?.travelTime ??
-      '',
+    travelTime: place?.travel_time ?? place?.travelTime ?? '',
 
-    visitDuration:
-      place?.visit_duration ??
-      place?.visitDuration ??
-      '',
+    visitDuration: place?.visit_duration ?? place?.visitDuration ?? '',
 
     rating:
       place?.rating == null || place.rating === ''
@@ -238,32 +208,18 @@ function normalizePlace(place, categories = []) {
 
     district: place?.district ?? 'Ratnapura',
 
-    imageUrl:
-      place?.image_url ??
-      place?.imageUrl ??
-      '',
+    imageUrl: place?.image_url ?? place?.imageUrl ?? '',
 
     secondaryImageUrl:
-      place?.secondary_image_url ??
-      place?.secondaryImageUrl ??
-      '',
+      place?.secondary_image_url ?? place?.secondaryImageUrl ?? '',
 
-    bestTime:
-      place?.best_time ??
-      place?.bestTime ??
-      '',
+    bestTime: place?.best_time ?? place?.bestTime ?? '',
 
     contact: place?.contact ?? '',
 
-    elevationMeters:
-      place?.elevation_meters ??
-      place?.elevationMeters ??
-      null,
+    elevationMeters: place?.elevation_meters ?? place?.elevationMeters ?? null,
 
-    miningContext:
-      place?.mining_context ??
-      place?.miningContext ??
-      '',
+    miningContext: place?.mining_context ?? place?.miningContext ?? '',
 
     visitingTips,
 
@@ -301,15 +257,10 @@ export default function App() {
   // Theme
   const [themeMode, setThemeMode] = useState('light');
 
-  const muiTheme = useMemo(
-    () => getMuiTheme(themeMode),
-    [themeMode]
-  );
+  const muiTheme = useMemo(() => getMuiTheme(themeMode), [themeMode]);
 
   const toggleTheme = () => {
-    setThemeMode((previous) =>
-      previous === 'light' ? 'dark' : 'light'
-    );
+    setThemeMode((previous) => (previous === 'light' ? 'dark' : 'light'));
   };
 
   // ----------------------------------------------------
@@ -336,7 +287,7 @@ export default function App() {
   const [apiError, setApiError] = useState('');
 
   const [districtInfo, setDistrictInfo] = useState(() =>
-    getStoredDistrictInfo()
+    getStoredDistrictInfo(),
   );
 
   // Load tourist places and categories from Express/MySQL.
@@ -348,50 +299,35 @@ export default function App() {
       setApiError('');
 
       try {
-        const [placesResponse, categoriesResponse] =
-          await Promise.all([
-            fetch(`${API_BASE_URL}/api/places`, {
-              signal: controller.signal,
-            }),
+        const [placesResponse, categoriesResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/places`, {
+            signal: controller.signal,
+          }),
 
-            fetch(`${API_BASE_URL}/api/categories`, {
-              signal: controller.signal,
-            }),
-          ]);
+          fetch(`${API_BASE_URL}/api/categories`, {
+            signal: controller.signal,
+          }),
+        ]);
 
         if (!placesResponse.ok) {
-          throw new Error(
-            `Places API returned HTTP ${placesResponse.status}`
-          );
+          throw new Error(`Places API returned HTTP ${placesResponse.status}`);
         }
 
         if (!categoriesResponse.ok) {
           throw new Error(
-            `Categories API returned HTTP ${categoriesResponse.status}`
+            `Categories API returned HTTP ${categoriesResponse.status}`,
           );
         }
 
         const placesJson = await placesResponse.json();
 
-        const categoriesJson =
-          await categoriesResponse.json();
+        const categoriesJson = await categoriesResponse.json();
 
-        const backendCategories = getApiRows(
-          categoriesJson,
-          'categories'
-        );
+        const backendCategories = getApiRows(categoriesJson, 'categories');
 
-        const backendPlaces = getApiRows(
-          placesJson,
-          'places'
-        )
-          .filter(
-            (place) =>
-              Number(place?.is_active ?? 1) === 1
-          )
-          .map((place) =>
-            normalizePlace(place, backendCategories)
-          );
+        const backendPlaces = getApiRows(placesJson, 'places')
+          .filter((place) => Number(place?.is_active ?? 1) === 1)
+          .map((place) => normalizePlace(place, backendCategories));
 
         setCategories(backendCategories);
         setPlaces(backendPlaces);
@@ -404,7 +340,7 @@ export default function App() {
 
         setApiError(
           'Unable to load tourist places from the backend. ' +
-            'Check your Express server, API routes, and database connection.'
+            'Check your Express server, API routes, and database connection.',
         );
       } finally {
         if (!controller.signal.aborted) {
@@ -434,7 +370,7 @@ export default function App() {
     if (!Array.isArray(newPlaces)) return;
 
     const normalizedPlaces = newPlaces.map((place) =>
-      normalizePlace(place, categories)
+      normalizePlace(place, categories),
     );
 
     setPlaces(normalizedPlaces);
@@ -444,11 +380,7 @@ export default function App() {
     const defaults = resetStoredPlaces();
 
     if (Array.isArray(defaults)) {
-      setPlaces(
-        defaults.map((place) =>
-          normalizePlace(place, categories)
-        )
-      );
+      setPlaces(defaults.map((place) => normalizePlace(place, categories)));
     }
   };
 
@@ -482,17 +414,56 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('explore');
 
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser =
+      localStorage.getItem('user') || sessionStorage.getItem('user');
+
+    try {
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [authToken, setAuthToken] = useState(
+    () =>
+      localStorage.getItem('token') || sessionStorage.getItem('token') || null,
+  );
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+  };
+
+  // Visitor login success
+  const handleVisitorLogin = (user) => {
+    setCurrentUser(user);
+
+    const token =
+      localStorage.getItem('token') || sessionStorage.getItem('token');
+
+    setAuthToken(token);
+    setActiveTab('explore');
+  };
+
+  // Visitor logout
+  const handleVisitorLogout = () => {
+    setCurrentUser(null);
+    setAuthToken(null);
+
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+
+    setActiveTab('explore');
+  };
   // ----------------------------------------------------
   // GEOLOCATION AND DISTANCE
   // ----------------------------------------------------
 
-  const [center, setCenter] = useState(
-    DISTRICT_INFO.coordinates
-  );
+  const [center, setCenter] = useState(DISTRICT_INFO.coordinates);
 
-  const [centerName, setCenterName] = useState(
-    'Your Location (Center Point)'
-  );
+  const [centerName, setCenterName] = useState('Your Location (Center Point)');
 
   const [radiusKm, setRadiusKm] = useState(25);
 
@@ -548,7 +519,7 @@ export default function App() {
     if (!navigator.geolocation) {
       setGeoError(
         'Geolocation is not supported by your browser. ' +
-          'Defaulting to Ratnapura Town Center.'
+          'Defaulting to Ratnapura Town Center.',
       );
 
       return;
@@ -567,7 +538,7 @@ export default function App() {
 
         setCenterName(
           `Your Location (${newCoords.lat.toFixed(4)}° N, ` +
-            `${newCoords.lng.toFixed(4)}° E)`
+            `${newCoords.lng.toFixed(4)}° E)`,
         );
 
         setIsGpsLive(true);
@@ -584,9 +555,7 @@ export default function App() {
         if (error.code === error.TIMEOUT) {
           errorMsg =
             'Location request timed out. Defaulting to Ratnapura Town Center.';
-        } else if (
-          error.code === error.POSITION_UNAVAILABLE
-        ) {
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
           errorMsg =
             'Location position unavailable. Defaulting to Ratnapura Town Center.';
         }
@@ -599,7 +568,7 @@ export default function App() {
         enableHighAccuracy: true,
         timeout: 15000,
         maximumAge: 5000,
-      }
+      },
     );
 
     return () => {
@@ -611,25 +580,18 @@ export default function App() {
   // HAVERSINE DISTANCE CALCULATION
   // ----------------------------------------------------
 
-  const calculateHaversine = (
-    lat1,
-    lon1,
-    lat2,
-    lon2
-  ) => {
+  const calculateHaversine = (lat1, lon1, lat2, lon2) => {
     const values = [lat1, lon1, lat2, lon2].map(Number);
 
     if (!values.every(Number.isFinite)) {
       return Infinity;
     }
 
-    const [latitude1, longitude1, latitude2, longitude2] =
-      values;
+    const [latitude1, longitude1, latitude2, longitude2] = values;
 
     const R = 6371;
 
-    const toRad = (degrees) =>
-      (degrees * Math.PI) / 180;
+    const toRad = (degrees) => (degrees * Math.PI) / 180;
 
     const dLat = toRad(latitude2 - latitude1);
 
@@ -643,12 +605,7 @@ export default function App() {
 
     const safeA = Math.min(1, Math.max(0, a));
 
-    const c =
-      2 *
-      Math.atan2(
-        Math.sqrt(safeA),
-        Math.sqrt(1 - safeA)
-      );
+    const c = 2 * Math.atan2(Math.sqrt(safeA), Math.sqrt(1 - safeA));
 
     return Number((R * c).toFixed(2));
   };
@@ -658,12 +615,7 @@ export default function App() {
       return Infinity;
     }
 
-    return calculateHaversine(
-      coord1.lat,
-      coord1.lng,
-      coord2.lat,
-      coord2.lng
-    );
+    return calculateHaversine(coord1.lat, coord1.lng, coord2.lat, coord2.lng);
   };
 
   // ----------------------------------------------------
@@ -680,7 +632,7 @@ export default function App() {
         center.lat,
         center.lng,
         place.coordinates.lat,
-        place.coordinates.lng
+        place.coordinates.lng,
       );
 
       return distance <= 25;
@@ -694,43 +646,33 @@ export default function App() {
   const filteredPlaces = useMemo(() => {
     // Exclude records with missing or invalid coordinates
     // before using them for map or distance calculations.
-    let result = places
-      .filter(hasValidCoordinates)
-      .map((place) => {
-        const liveDistance = calculateHaversine(
-          center.lat,
-          center.lng,
-          place.coordinates.lat,
-          place.coordinates.lng
-        );
+    let result = places.filter(hasValidCoordinates).map((place) => {
+      const liveDistance = calculateHaversine(
+        center.lat,
+        center.lng,
+        place.coordinates.lat,
+        place.coordinates.lng,
+      );
 
-        return {
-          ...place,
-          distanceKm: liveDistance,
-        };
-      });
+      return {
+        ...place,
+        distanceKm: liveDistance,
+      };
+    });
 
     // Radar / radius filtering
     if (radarMode === 'radar') {
-      result = result.filter(
-        (place) => place.distanceKm <= 25
-      );
+      result = result.filter((place) => place.distanceKm <= 25);
     } else if (radiusKm < 100) {
-      result = result.filter(
-        (place) => place.distanceKm <= radiusKm
-      );
+      result = result.filter((place) => place.distanceKm <= radiusKm);
     }
 
     // Category filtering
     if (selectedCategory !== 'all') {
       result = result.filter((place) => {
-        const placeCategory = normalizeCategory(
-          place.category
-        );
+        const placeCategory = normalizeCategory(place.category);
 
-        const selected = normalizeCategory(
-          selectedCategory
-        );
+        const selected = normalizeCategory(selectedCategory);
 
         return (
           placeCategory === selected ||
@@ -756,7 +698,7 @@ export default function App() {
         return searchableFields.some((field) =>
           String(field ?? '')
             .toLowerCase()
-            .includes(query)
+            .includes(query),
         );
       });
     }
@@ -768,36 +710,19 @@ export default function App() {
       }
 
       if (sortBy === 'rating') {
-        return (
-          (Number(b.rating) || 0) -
-          (Number(a.rating) || 0)
-        );
+        return (Number(b.rating) || 0) - (Number(a.rating) || 0);
       }
 
       if (sortBy === 'name') {
-        return String(a.name ?? '').localeCompare(
-          String(b.name ?? '')
-        );
+        return String(a.name ?? '').localeCompare(String(b.name ?? ''));
       }
 
       if (sortBy === 'fee') {
         const feeA =
-          parseInt(
-            String(a.entranceFee ?? '').replace(
-              /[^0-9]/g,
-              ''
-            ),
-            10
-          ) || 0;
+          parseInt(String(a.entranceFee ?? '').replace(/[^0-9]/g, ''), 10) || 0;
 
         const feeB =
-          parseInt(
-            String(b.entranceFee ?? '').replace(
-              /[^0-9]/g,
-              ''
-            ),
-            10
-          ) || 0;
+          parseInt(String(b.entranceFee ?? '').replace(/[^0-9]/g, ''), 10) || 0;
 
         return feeA - feeB;
       }
@@ -821,16 +746,14 @@ export default function App() {
   // ----------------------------------------------------
 
   const plannedPlaces = useMemo(() => {
-    return places.filter((place) =>
-      plannedIds.includes(place.id)
-    );
+    return places.filter((place) => plannedIds.includes(place.id));
   }, [plannedIds, places]);
 
   const handleTogglePlan = (place) => {
     setPlannedIds((previous) =>
       previous.includes(place.id)
         ? previous.filter((id) => id !== place.id)
-        : [...previous, place.id]
+        : [...previous, place.id],
     );
   };
 
@@ -850,9 +773,7 @@ export default function App() {
     if (!navigator.geolocation) {
       setCenter({ lat: 6.6828, lng: 80.3992 });
 
-      setCenterName(
-        'Ratnapura Clock Tower (GPS: 6.6828° N, 80.3992° E)'
-      );
+      setCenterName('Ratnapura Clock Tower (GPS: 6.6828° N, 80.3992° E)');
 
       return;
     }
@@ -870,7 +791,7 @@ export default function App() {
 
         setCenterName(
           `Your Location (${newCoords.lat.toFixed(4)}° N, ` +
-            `${newCoords.lng.toFixed(4)}° E)`
+            `${newCoords.lng.toFixed(4)}° E)`,
         );
 
         setIsGpsLive(true);
@@ -882,12 +803,10 @@ export default function App() {
 
         setCenter({ lat: 6.6828, lng: 80.3992 });
 
-        setCenterName(
-          'Ratnapura Clock Tower (GPS: 6.6828° N, 80.3992° E)'
-        );
+        setCenterName('Ratnapura Clock Tower (GPS: 6.6828° N, 80.3992° E)');
 
         setGeoError(
-          'Location permission denied. Defaulting to Ratnapura Town Center.'
+          'Location permission denied. Defaulting to Ratnapura Town Center.',
         );
       },
 
@@ -895,7 +814,7 @@ export default function App() {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 0,
-      }
+      },
     );
   };
 
@@ -919,9 +838,7 @@ export default function App() {
   };
 
   const handleSelectAttractionByName = (name) => {
-    const found = places.find(
-      (place) => place.name === name
-    );
+    const found = places.find((place) => place.name === name);
 
     if (found) {
       setActivePlace(found);
@@ -953,28 +870,26 @@ export default function App() {
         {/* Header */}
         <Header
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
           planCount={plannedIds.length}
           themeMode={themeMode}
           onToggleTheme={toggleTheme}
           isAdminLoggedIn={adminUser?.role === 'admin'}
           onAdminLogout={handleAdminLogout}
+          currentUser={currentUser}
+          onLogout={handleVisitorLogout}
+          authToken={authToken}
         />
 
         {/* Main content */}
         <main
           className={`w-full pt-16 pb-20 lg:pb-0 min-h-[calc(100vh-280px)] flex-1 transition-colors duration-300 ${
-            themeMode === 'dark'
-              ? 'bg-[#0f172a]'
-              : 'bg-[#faf6f0]'
+            themeMode === 'dark' ? 'bg-[#0f172a]' : 'bg-[#faf6f0]'
           }`}
         >
           {/* Backend loading and error messages */}
           {placesLoading && (
-            <div
-              role="status"
-              className="p-4 text-center"
-            >
+            <div role="status" className="p-4 text-center">
               Loading tourist places...
             </div>
           )}
@@ -1008,10 +923,7 @@ export default function App() {
                 onOpenMapClick={() => setActiveTab('map')}
               />
 
-              <div
-                ref={gridRef}
-                className="w-full pt-4"
-              >
+              <div ref={gridRef} className="w-full pt-4">
                 <Places
                   places={filteredPlaces}
                   totalInBoundary={places.length}
@@ -1045,9 +957,7 @@ export default function App() {
                   onTogglePlan={handleTogglePlan}
                   onOpenDetails={setDetailModalPlace}
                   onOpenDirections={setDirectionsModalPlace}
-                  onViewInPlanner={() =>
-                    setActiveTab('planner')
-                  }
+                  onViewInPlanner={() => setActiveTab('planner')}
                   radarMode={radarMode}
                   onRadarModeChange={setRadarMode}
                   isGpsLive={isGpsLive}
@@ -1099,9 +1009,7 @@ export default function App() {
               geoError={geoError}
               placesWithin25Count={placesWithin25Count}
               onClearFilters={handleClearFilters}
-              onNavigateToExplore={() =>
-                setActiveTab('explore')
-              }
+              onNavigateToExplore={() => setActiveTab('explore')}
             />
           )}
 
@@ -1114,9 +1022,7 @@ export default function App() {
               plannedPlaces={plannedPlaces}
               onRemoveFromPlan={(id) => {
                 setPlannedIds((previous) =>
-                  previous.filter(
-                    (placeId) => placeId !== id
-                  )
+                  previous.filter((placeId) => placeId !== id),
                 );
               }}
               onClearPlan={() => setPlannedIds([])}
@@ -1134,14 +1040,10 @@ export default function App() {
           )}
 
           {/* Stories and guides */}
-          {activeTab === 'stories' && (
-            <StoriesGuidesView />
-          )}
+          {activeTab === 'stories' && <StoriesGuidesView />}
 
           {/* About Sabaragamuwa */}
-          {activeTab === 'about' && (
-            <AboutSabaragamuwaView />
-          )}
+          {activeTab === 'about' && <AboutSabaragamuwaView />}
 
           {/* Admin panel */}
           {activeTab === 'admin' &&
@@ -1154,12 +1056,8 @@ export default function App() {
                 onResetPlaces={handleResetPlaces}
                 adminUser={adminUser}
                 onLogout={handleAdminLogout}
-                onNavigateToExplore={() =>
-                  setActiveTab('explore')
-                }
-                onNavigateToMap={() =>
-                  setActiveTab('map')
-                }
+                onNavigateToExplore={() => setActiveTab('explore')}
+                onNavigateToMap={() => setActiveTab('map')}
                 onPreviewPlace={(place) => {
                   setActivePlace(place);
                   setDetailModalPlace(place);
@@ -1168,9 +1066,8 @@ export default function App() {
             ) : (
               <LoginView
                 onLoginSuccess={handleAdminLogin}
-                onBackToExplore={() =>
-                  setActiveTab('explore')
-                }
+                onUserLoginSuccess={handleVisitorLogin}
+                onBackToExplore={() => setActiveTab('explore')}
               />
             ))}
         </main>
@@ -1178,9 +1075,7 @@ export default function App() {
         {/* Footer */}
         <Footer
           onNavigateTab={setActiveTab}
-          onSelectAttractionByName={
-            handleSelectAttractionByName
-          }
+          onSelectAttractionByName={handleSelectAttractionByName}
         />
 
         {/* Place details modal */}
@@ -1188,9 +1083,7 @@ export default function App() {
           place={detailModalPlace}
           onClose={() => setDetailModalPlace(null)}
           isPlanned={
-            detailModalPlace
-              ? plannedIds.includes(detailModalPlace.id)
-              : false
+            detailModalPlace ? plannedIds.includes(detailModalPlace.id) : false
           }
           onTogglePlan={handleTogglePlan}
           onOpenDirections={(place) => {
