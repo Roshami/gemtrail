@@ -72,7 +72,6 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/places', require('./routes/places'));
 app.use('/api/favorites', require('./routes/favorites'));
-app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/itineraries', require('./routes/itineraries'));
 app.use(notFound);
 app.use(errorHandler);
