@@ -367,21 +367,25 @@ export const Header = ({
             }}
           >
             <Box
+              component="button"
+              onClick={() => onTabChange('explore')}
               sx={{
-                width: 38,
-                height: 38,
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%)',
-                color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(45, 106, 79, 0.25)',
-                transition: 'transform 0.2s ease',
-                '&:hover': { transform: 'scale(1.05)' },
+                gap: 1.25,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                p: 0,
+                textAlign: 'left',
+                minHeight: 44,
               }}
             >
-              <DiamondIcon sx={{ fontSize: 20 }} />
+              <img
+                src="/public/logo1.png"
+                alt="GemTrail Logo"
+                style={{ width: 50, objectFit: 'contain' }}
+              />
             </Box>
 
             <Typography
