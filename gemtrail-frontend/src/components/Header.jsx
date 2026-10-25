@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { jwtDecode } from 'jwt-decode';
 import {
   AppBar,
   Toolbar,
@@ -76,31 +75,6 @@ export const Header = ({
   const [passwordError, setPasswordError] = useState(false);
 
   const [favoriteCount, setFavoriteCount] = useState(0);
-  const [isRoleAdmin, setIsRoleAdmin] = useState(false);
-
-  useEffect(() => {
-    try {
-      const token = authToken || localStorage.getItem('token');
-
-      if (!token) {
-        setIsRoleAdmin(false);
-        return;
-      }
-
-      const decodedToken = jwtDecode(token);
-
-      const roleString = String(decodedToken.role || '').toLowerCase();
-      if (roleString === 'admin') {
-        setIsRoleAdmin(true);
-      } else {
-        setIsRoleAdmin(false);
-      }
-    } catch (error) {
-      console.error('Failed to decode authentication token:', error);
-      setIsRoleAdmin(false);
-    }
-  }, [authToken, currentUser]);
-
   const favoritesToken = (() => {
     if (authToken) return authToken;
 
@@ -323,16 +297,18 @@ export const Header = ({
     },
     {
       id: 'about',
-      label: 'About Ratnapura',
+      label: 'About Sabaragamuwa',
       icon: <InfoIcon fontSize="small" />,
     },
-    {
-      id: 'admin_panel',
-      label: 'Admin Panel',
-      icon: <AdminIcon fontSize="small" />,
-      // This item is only shown if the user is an admin
-      hidden: isRoleAdmin ? false : true,
-    },
+    ...(isAdminLoggedIn
+      ? [
+          {
+            id: 'admin_panel',
+            label: 'Admin Panel',
+            icon: <AdminIcon fontSize="small" />,
+          },
+        ]
+      : []),
     {
       id: isUserLoggedIn ? 'profile' : 'admin',
       label: isUserLoggedIn ? 'Profile' : 'Login',
@@ -390,8 +366,24 @@ export const Header = ({
               minHeight: 44,
             }}
           >
-            <img src='/public/logo1.png' alt='GemTrail Logo' style={{ width: 50, objectFit: 'contain' }} />
-            
+            <Box
+              sx={{
+                width: 38,
+                height: 38,
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(45, 106, 79, 0.25)',
+                transition: 'transform 0.2s ease',
+                '&:hover': { transform: 'scale(1.05)' },
+              }}
+            >
+              <DiamondIcon sx={{ fontSize: 20 }} />
+            </Box>
+
             <Typography
               variant="h6"
               sx={{
@@ -400,10 +392,18 @@ export const Header = ({
                 lineHeight: 1,
                 color: theme.palette.text.primary,
                 letterSpacing: '-0.02em',
+                fontSize: { xs: '1.15rem', sm: '1.25rem' },
                 whiteSpace: 'nowrap',
               }}
             >
-              <img src='/public/logo2.png' alt='GemTrail Logo' className='w-35 2xl:150 object-contain'  />
+              GemTrail
+              <Box
+                component="span"
+                sx={{ display: { xs: 'none', sm: 'inline' } }}
+              >
+                {' '}
+                Ratnapura
+              </Box>
             </Typography>
           </Box>
 
