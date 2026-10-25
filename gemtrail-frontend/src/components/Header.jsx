@@ -297,7 +297,7 @@ export const Header = ({
     },
     {
       id: 'about',
-      label: 'About Sabaragamuwa',
+      label: 'About Ratnapura',
       icon: <InfoIcon fontSize="small" />,
     },
     ...(isAdminLoggedIn
