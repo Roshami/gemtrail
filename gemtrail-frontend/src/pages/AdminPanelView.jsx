@@ -331,45 +331,8 @@ export default function AdminPanelView({
     loadData();
   }, [loadData]);
 
-  const filteredPlaces = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    return places.filter((place) => {
-      const matchesSearch =
-        !query ||
-        [
-          place.name,
-          place.location,
-          place.district,
-          place.short_description,
-          place.category_name,
-          getCategoryName(place.category_id ?? place.categoryId),
-        ].some((value) =>
-          String(value || '')
-            .toLowerCase()
-            .includes(query),
-        );
-
-      const matchesCategory =
-        categoryFilter === 'all' ||
-        String(place.category_id) === String(categoryFilter);
-
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'active' && place.is_active) ||
-        (statusFilter === 'inactive' && !place.is_active);
-
-      return matchesSearch && matchesCategory && matchesStatus;
-    });
-  }, [places, search, categoryFilter, statusFilter]);
-
-  const paginatedPlaces = filteredPlaces.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage,
-  );
-
+  // Define this helper before filteredPlaces uses it.
   const getCategoryName = (categoryId, categoryName) => {
-    // Prefer the category name returned by the backend, if available.
     if (typeof categoryName === 'string' && categoryName.trim()) {
       return categoryName;
     }
@@ -380,6 +343,46 @@ export default function AdminPanelView({
 
     return category?.name || 'Uncategorized';
   };
+
+  const filteredPlaces = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return places.filter((place) => {
+      const categoryId = place.category_id ?? place.categoryId;
+      const categoryName = place.category_name ?? place.categoryName;
+
+      const matchesSearch =
+        !query ||
+        [
+          place.name,
+          place.location,
+          place.district,
+          place.short_description,
+          categoryName,
+          getCategoryName(categoryId, categoryName),
+        ].some((value) =>
+          String(value || '')
+            .toLowerCase()
+            .includes(query),
+        );
+
+      const matchesCategory =
+        categoryFilter === 'all' ||
+        String(categoryId) === String(categoryFilter);
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && Boolean(place.is_active)) ||
+        (statusFilter === 'inactive' && !Boolean(place.is_active));
+
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
+  }, [places, categories, search, categoryFilter, statusFilter]);
+
+  const paginatedPlaces = filteredPlaces.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage,
+  );
 
   const openAddDialog = () => {
     setEditingId(null);
