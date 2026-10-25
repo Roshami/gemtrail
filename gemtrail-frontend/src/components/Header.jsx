@@ -392,18 +392,14 @@ export const Header = ({
                 lineHeight: 1,
                 color: theme.palette.text.primary,
                 letterSpacing: '-0.02em',
-                fontSize: { xs: '1.15rem', sm: '1.25rem' },
                 whiteSpace: 'nowrap',
               }}
             >
-              GemTrail
-              <Box
-                component="span"
-                sx={{ display: { xs: 'none', sm: 'inline' } }}
-              >
-                {' '}
-                Ratnapura
-              </Box>
+              <img
+                src="/public/logo2.png"
+                alt="GemTrail Logo"
+                className="w-35 2xl:150 object-contain"
+              />
             </Typography>
           </Box>
 
