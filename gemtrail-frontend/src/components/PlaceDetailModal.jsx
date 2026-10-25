@@ -85,7 +85,7 @@ export const PlaceDetailModal = ({
       <Box sx={{ position: 'relative', width: '100%', height: { xs: 200, sm: 280 }, bgcolor: '#000' }}>
         <Box
           component="img"
-          src={place.image}
+          src={place.image_url}
           alt={place.name}
           sx={{
             width: '100%',
